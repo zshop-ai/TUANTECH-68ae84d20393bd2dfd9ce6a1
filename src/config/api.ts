@@ -5,8 +5,8 @@ export const API_CONFIG = {
     REFRESH_TOKEN: '/auth/refresh-token',
   },
   // CẬP NHẬT VỚI THÔNG TIN THỰC TẾ CỦA BẠN
-  APP_ID: '4447770839699639655', // App ID thực từ Zalo Developer
-  SHOP_ID: '68ad2de1e02ddc5108d2fd0b', // Shop ID thực từ backend
+  APP_ID: import.meta.env.VITE_APP_ID || '4447770839699639655', // Lấy từ env, fallback về default
+  SHOP_ID: import.meta.env.VITE_SHOP_ID || '68ad2de1e02ddc5108d2fd0b', // Lấy từ env, fallback về default
 };
 
 export const ZALO_CONFIG = {
