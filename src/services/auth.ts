@@ -85,7 +85,7 @@ class AuthService {
 
   // Kiểm tra trạng thái đăng nhập
   isLoggedIn(): boolean {
-    return !!this.getAccessToken();
+    return !!this.getAccessToken() && !this.isTokenExpired();
   }
 
   // Lấy thông tin user hiện tại
@@ -174,6 +174,88 @@ class AuthService {
       this.clearAuth();
       return false;
     }
+  }
+
+  // Kiểm tra token có hết hạn không
+  private isTokenExpired(): boolean {
+    const token = this.getAccessToken();
+    if (!token) return true;
+
+    try {
+      const payload = this.decodeToken(token);
+      if (!payload) return true;
+      
+      // Kiểm tra token hết hạn (thêm buffer 5 phút)
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp < (currentTime + 300);
+    } catch (error) {
+      return true;
+    }
+  }
+
+  // Decode JWT token
+  private decodeToken(token: string): any {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  }
+
+  // Kiểm tra token sắp hết hạn (trong vòng 10 phút)
+  private isTokenExpiringSoon(): boolean {
+    const token = this.getAccessToken();
+    if (!token) return true;
+
+    try {
+      const payload = this.decodeToken(token);
+      if (!payload) return true;
+      
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp < (currentTime + 600); // 10 phút
+    } catch (error) {
+      return true;
+    }
+  }
+
+  // Tự động refresh token nếu cần
+  async ensureValidToken(): Promise<boolean> {
+    if (!this.getAccessToken()) {
+      return false;
+    }
+
+    if (this.isTokenExpired()) {
+      return await this.refreshToken();
+    }
+
+    if (this.isTokenExpiringSoon()) {
+      return await this.refreshToken();
+    }
+
+    return true;
+  }
+
+  // Lấy header authorization với tự động refresh token
+  async getAuthHeadersWithRefresh(): Promise<Record<string, string>> {
+    // Đảm bảo token còn hiệu lực
+    const isValid = await this.ensureValidToken();
+    if (!isValid) {
+      throw new Error('Authentication required');
+    }
+
+    const token = this.getAccessToken();
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
+  // Kiểm tra và refresh token nếu cần (cho các component)
+  async checkAndRefreshToken(): Promise<boolean> {
+    return await this.ensureValidToken();
   }
 
   // Lấy header authorization cho các API call khác
