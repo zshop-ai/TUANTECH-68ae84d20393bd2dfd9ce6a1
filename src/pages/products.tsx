@@ -1,59 +1,78 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Page, 
-  Box, 
-  Text, 
-  Button, 
-  Header, 
-  useSnackbar
-} from 'zmp-ui';
-import { useNavigate } from 'zmp-ui';
-import { Search, Star } from 'lucide-react';
+import React, { useState, useMemo, useMemo as useReactMemo } from "react";
+import { Page, Box, Text, Button, Header, useSnackbar, Spinner } from "zmp-ui";
+import { useNavigate } from "zmp-ui";
+import { Search, Star } from "lucide-react";
 
-import ProductCard from '../components/ProductCard';
-import BottomNavigation from '../components/BottomNavigation';
-import { products } from '../data/products';
+import ProductCard from "../components/ProductCard";
+import BottomNavigation from "../components/BottomNavigation";
+import { useProducts } from "../hooks/useProducts";
+import { useCategories } from "../hooks/useCategories";
 
 const ProductsPage: React.FC = () => {
   const navigate = useNavigate();
   const { openSnackbar } = useSnackbar();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Get categories from API
+  const { categories: apiCategories, loading: categoriesLoading } =
+    useCategories();
+
+  // Create categories list with "All" option
   const categories = [
-    { id: 'all', name: 'Tất cả', icon: 'zi-star' },
-    { id: 'skincare', name: 'Chăm sóc da', icon: 'zi-star' },
-    { id: 'makeup', name: 'Trang điểm', icon: 'zi-star' },
-    { id: 'haircare', name: 'Chăm sóc tóc', icon: 'zi-star' },
-    { id: 'fragrance', name: 'Nước hoa', icon: 'zi-star' }
+    { id: "all", name: "Tất cả", icon: "zi-grid" },
+    ...apiCategories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon,
+    })),
   ];
+
+  // Use the products hook with API integration
+  const query = useReactMemo(
+    () => ({
+      search: searchQuery || undefined,
+      categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+      isActive: true,
+    }),
+    [searchQuery, selectedCategory]
+  );
+
+  const { products, loading, error } = useProducts({ query });
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
-    
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
-    }
-    
-    if (searchQuery) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase())
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(
+        (product) => product.category === selectedCategory
       );
     }
-    
-    return filtered;
-  }, [selectedCategory, searchQuery]);
 
-  const handleAddToCart = (product: any) => {
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          product.brand.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [products, selectedCategory, searchQuery]);
+
+  const handleAddToCart = (product: any, variant?: any, quantity?: number) => {
+    const message = variant
+      ? `Đã thêm ${quantity || 1} ${product.name} (${variant.sku}) vào giỏ hàng`
+      : `Đã thêm ${product.name} vào giỏ hàng`;
+
     openSnackbar({
-      text: `Đã thêm ${product.name} vào giỏ hàng`,
-      type: 'success',
+      text: message,
+      type: "success",
     });
   };
 
   const handleViewDetail = (product: any) => {
-    navigate('/product-detail', { state: { product } });
+    navigate("/product-detail", { state: { product } });
   };
 
   return (
@@ -84,8 +103,8 @@ const ProductsPage: React.FC = () => {
               key={category.id}
               className={`flex-shrink-0 px-4 py-2 rounded-full cursor-pointer transition-colors ${
                 selectedCategory === category.id
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200'
+                  ? "bg-primary-600 text-white"
+                  : "bg-white text-gray-600 border border-gray-200"
               }`}
               onClick={() => setSelectedCategory(category.id)}
             >
@@ -97,11 +116,28 @@ const ProductsPage: React.FC = () => {
         </Box>
 
         {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
+        {loading ? (
+          <Box className="text-center py-12">
+            <Spinner />
+            <Text className="text-gray-500 text-lg mt-4">
+              Đang tải sản phẩm...
+            </Text>
+          </Box>
+        ) : error ? (
+          <Box className="text-center py-12">
+            <Search className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <Text className="text-red-500 text-lg mb-2">Lỗi tải sản phẩm</Text>
+            <Text className="text-red-400 text-sm">{error}</Text>
+          </Box>
+        ) : filteredProducts.length === 0 ? (
           <Box className="text-center py-12">
             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <Text className="text-gray-500 text-lg mb-2">Không tìm thấy sản phẩm</Text>
-            <Text className="text-gray-400">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</Text>
+            <Text className="text-gray-500 text-lg mb-2">
+              Không tìm thấy sản phẩm
+            </Text>
+            <Text className="text-gray-400">
+              Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+            </Text>
           </Box>
         ) : (
           <Box className="grid grid-cols-2 gap-4">

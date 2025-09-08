@@ -1,15 +1,8 @@
-import React, { useState } from 'react';
-import { 
-  Page, 
-  Box, 
-  Text, 
-  Button, 
-  Header, 
-  useSnackbar,
-  Input
-} from 'zmp-ui';
-import { useNavigate, useLocation } from 'zmp-ui';
-import { CreditCard, Building2, Wallet } from 'lucide-react';
+import React, { useState } from "react";
+import { Page, Box, Text, Button, Header, useSnackbar, Input } from "zmp-ui";
+import { useNavigate, useLocation } from "zmp-ui";
+import { CreditCard, Building2, Wallet } from "lucide-react";
+import { cartService } from "../services/cart";
 
 function CheckoutPage() {
   const navigate = useNavigate();
@@ -17,27 +10,35 @@ function CheckoutPage() {
   const { openSnackbar } = useSnackbar();
   const products = location.state?.products || [];
 
+  // Redirect if no products
+  if (products.length === 0) {
+    navigate("/");
+    return null;
+  }
+
   const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    district: '',
-    paymentMethod: 'cod',
-    note: ''
+    fullName: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    district: "",
+    paymentMethod: "cod",
+    note: "",
   });
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
   const calculateSubtotal = () => {
     return products.reduce((total: number, item: any) => {
-      return total + (item.product.price * item.quantity);
+      const product = item.product || item;
+      const productPrice = item.variantPrice || product.price;
+      return total + productPrice * item.quantity;
     }, 0);
   };
 
@@ -46,40 +47,51 @@ function CheckoutPage() {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate form
     if (!formData.fullName || !formData.phone || !formData.address) {
       openSnackbar({
-        type: 'error',
-        text: 'Vui lòng điền đầy đủ thông tin bắt buộc',
+        type: "error",
+        text: "Vui lòng điền đầy đủ thông tin bắt buộc",
         duration: 3000,
       });
       return;
     }
 
-    // Mock order placement
-    openSnackbar({
-      type: 'success',
-      text: 'Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm nhất',
-      duration: 3000,
-    });
+    try {
+      await cartService.checkout({
+        customerName: formData.fullName,
+        customerPhone: formData.phone,
+        address: formData.address,
+        notes: formData.note,
+      });
 
-    // Navigate to order confirmation
-    setTimeout(() => {
-      navigate('/order-success');
-    }, 2000);
+      openSnackbar({
+        type: "success",
+        text: "Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm nhất",
+        duration: 3000,
+      });
+
+      navigate("/order-success");
+    } catch (e: any) {
+      openSnackbar({
+        type: "error",
+        text: e?.message || "Đặt hàng thất bại",
+        duration: 3000,
+      });
+    }
   };
 
   return (
     <Page className="bg-gray-50">
       {/* Header */}
-      <Header 
+      <Header
         title="Thanh toán"
         className="bg-primary-600 text-white"
         showBackIcon
@@ -91,29 +103,45 @@ function CheckoutPage() {
           <Text.Title size="large" className="mb-3">
             Tóm tắt đơn hàng
           </Text.Title>
-          
-          {products.map((item: any, index: number) => (
-            <Box key={index} className="flex items-center space-x-3 mb-3">
-              <Box className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                <img
-                  src={item.product.images[0]}
-                  alt={item.product.name}
-                  className="w-full h-full object-cover"
-                />
-              </Box>
-              <Box className="flex-1 min-w-0">
-                <Text className="font-medium text-gray-900 line-clamp-1">
-                  {item.product.name}
+
+          {products.map((item: any, index: number) => {
+            // Handle different product structures (with/without variants)
+            const product = item.product || item;
+            const productImages = product.images || [];
+            const productPrice = item.variantPrice || product.price;
+            const variantInfo = item.selectedVariant
+              ? ` (${item.variantSku || item.selectedVariant.sku})`
+              : "";
+
+            return (
+              <Box key={index} className="flex items-center space-x-3 mb-3">
+                <Box className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <img
+                    src={productImages[0] || "/placeholder-image.png"}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </Box>
+                <Box className="flex-1 min-w-0">
+                  <Text className="font-medium text-gray-900 line-clamp-1">
+                    {product.name}
+                    {variantInfo}
+                  </Text>
+                  <Text className="text-sm text-gray-500">
+                    Số lượng: {item.quantity}
+                  </Text>
+                  {item.selectedVariant && (
+                    <Text className="text-xs text-gray-400">
+                      SKU: {item.variantSku || item.selectedVariant.sku}
+                    </Text>
+                  )}
+                </Box>
+                <Text className="font-semibold text-primary-600">
+                  {formatPrice(productPrice * item.quantity)}
                 </Text>
-                <Text className="text-sm text-gray-500">
-                  Số lượng: {item.quantity}
-                </Text>
               </Box>
-              <Text className="font-semibold text-primary-600">
-                {formatPrice(item.product.price * item.quantity)}
-              </Text>
-            </Box>
-          ))}
+            );
+          })}
 
           {/* Divider */}
           <Box className="border-t border-gray-200 my-4" />
@@ -143,57 +171,57 @@ function CheckoutPage() {
           <Text.Title size="large" className="mb-3">
             Thông tin giao hàng
           </Text.Title>
-          
+
           <Box className="space-y-3">
             <Input
               label="Họ và tên *"
               placeholder="Nhập họ và tên"
               value={formData.fullName}
-              onChange={(e) => handleInputChange('fullName', e.target.value)}
+              onChange={(e) => handleInputChange("fullName", e.target.value)}
             />
-            
+
             <Input
               label="Số điện thoại *"
               placeholder="Nhập số điện thoại"
               value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
             />
-            
+
             <Input
               label="Email"
               placeholder="Nhập email (không bắt buộc)"
               value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
+              onChange={(e) => handleInputChange("email", e.target.value)}
             />
-            
+
             <Input
               label="Địa chỉ *"
               placeholder="Nhập địa chỉ giao hàng"
               value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
+              onChange={(e) => handleInputChange("address", e.target.value)}
             />
-            
+
             <Box className="grid grid-cols-2 gap-3">
               <Input
                 label="Tỉnh/Thành phố"
                 placeholder="Chọn tỉnh/thành phố"
                 value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
+                onChange={(e) => handleInputChange("city", e.target.value)}
               />
-              
+
               <Input
                 label="Quận/Huyện"
                 placeholder="Chọn quận/huyện"
                 value={formData.district}
-                onChange={(e) => handleInputChange('district', e.target.value)}
+                onChange={(e) => handleInputChange("district", e.target.value)}
               />
             </Box>
-            
+
             <Input
               label="Ghi chú"
               placeholder="Ghi chú cho đơn hàng (không bắt buộc)"
               value={formData.note}
-              onChange={(e) => handleInputChange('note', e.target.value)}
+              onChange={(e) => handleInputChange("note", e.target.value)}
             />
           </Box>
         </Box>
@@ -203,49 +231,63 @@ function CheckoutPage() {
           <Text.Title size="large" className="mb-3">
             Phương thức thanh toán
           </Text.Title>
-          
+
           <Box className="space-y-3">
             <Box
               className={`p-3 border rounded-lg cursor-pointer ${
-                formData.paymentMethod === 'cod' ? 'border-primary-600 bg-primary-50' : 'border-gray-200'
+                formData.paymentMethod === "cod"
+                  ? "border-primary-600 bg-primary-50"
+                  : "border-gray-200"
               }`}
-              onClick={() => handleInputChange('paymentMethod', 'cod')}
+              onClick={() => handleInputChange("paymentMethod", "cod")}
             >
               <Box className="flex items-center space-x-3">
                 <Wallet className="w-5 h-5 text-primary-600" />
                 <Box>
-                  <Text className="font-medium">Thanh toán khi nhận hàng (COD)</Text>
-                  <Text className="text-sm text-gray-500">Thanh toán bằng tiền mặt khi nhận hàng</Text>
+                  <Text className="font-medium">
+                    Thanh toán khi nhận hàng (COD)
+                  </Text>
+                  <Text className="text-sm text-gray-500">
+                    Thanh toán bằng tiền mặt khi nhận hàng
+                  </Text>
                 </Box>
               </Box>
             </Box>
-            
+
             <Box
               className={`p-3 border rounded-lg cursor-pointer ${
-                formData.paymentMethod === 'bank' ? 'border-primary-600 bg-primary-50' : 'border-gray-200'
+                formData.paymentMethod === "bank"
+                  ? "border-primary-600 bg-primary-50"
+                  : "border-gray-200"
               }`}
-              onClick={() => handleInputChange('paymentMethod', 'bank')}
+              onClick={() => handleInputChange("paymentMethod", "bank")}
             >
               <Box className="flex items-center space-x-3">
                 <Building2 className="w-5 h-5 text-primary-600" />
                 <Box>
                   <Text className="font-medium">Chuyển khoản ngân hàng</Text>
-                  <Text className="text-sm text-gray-500">Chuyển khoản qua tài khoản ngân hàng</Text>
+                  <Text className="text-sm text-gray-500">
+                    Chuyển khoản qua tài khoản ngân hàng
+                  </Text>
                 </Box>
               </Box>
             </Box>
-            
+
             <Box
               className={`p-3 border rounded-lg cursor-pointer ${
-                formData.paymentMethod === 'momo' ? 'border-primary-600 bg-primary-50' : 'border-gray-200'
+                formData.paymentMethod === "momo"
+                  ? "border-primary-600 bg-primary-50"
+                  : "border-gray-200"
               }`}
-              onClick={() => handleInputChange('paymentMethod', 'momo')}
+              onClick={() => handleInputChange("paymentMethod", "momo")}
             >
               <Box className="flex items-center space-x-3">
                 <CreditCard className="w-5 h-5 text-primary-600" />
                 <Box>
                   <Text className="font-medium">Ví MoMo</Text>
-                  <Text className="text-sm text-gray-500">Thanh toán qua ví MoMo</Text>
+                  <Text className="text-sm text-gray-500">
+                    Thanh toán qua ví MoMo
+                  </Text>
                 </Box>
               </Box>
             </Box>

@@ -1,93 +1,129 @@
-import React, { useState } from 'react';
-import { 
-  Page, 
-  Box, 
-  Text, 
-  Button, 
-  Header, 
-  useSnackbar,
-  List
-} from 'zmp-ui';
-import { useNavigate } from 'zmp-ui';
-import { ChevronLeft, ChevronRight, Trash2, ShoppingCart } from 'lucide-react';
-import BottomNavigation from '../components/BottomNavigation';
+import React, { useEffect, useState } from "react";
+import { Page, Box, Text, Button, Header, useSnackbar, List } from "zmp-ui";
+import { useNavigate } from "zmp-ui";
+import { ChevronLeft, ChevronRight, Trash2, ShoppingCart } from "lucide-react";
+import BottomNavigation from "../components/BottomNavigation";
+import { cartService } from "../services/cart";
 
-// Mock cart data
-const mockCartItems = [
-  {
-    id: "1",
-    product: {
-      id: "1",
-      name: "Kem dưỡng ẩm chống lão hóa",
-      brand: "Green Beauty",
-      price: 450000,
-      originalPrice: 550000,
-      images: ["https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"],
-      inStock: true
-    },
-    quantity: 2
-  },
-  {
-    id: "2",
-    product: {
-      id: "3",
-      name: "Son môi lì bền màu",
-      brand: "Luxe Beauty", 
-      price: 320000,
-      originalPrice: 380000,
-      images: ["https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&h=400&fit=crop"],
-      inStock: true
-    },
-    quantity: 1
-  }
-];
+type BackendCartItem = {
+  productId:
+    | {
+        _id: string;
+        name: string;
+        images?: string[];
+        minPrice?: number;
+        brand?: string;
+      }
+    | string;
+  quantity: number;
+  price?: number;
+  attributes?: Record<string, string>;
+};
+
+type CartUIItem = {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    brand?: string;
+    price: number;
+    originalPrice?: number;
+    images: string[];
+  };
+  quantity: number;
+  attributes?: Record<string, string>;
+};
 
 function CartPage() {
   const navigate = useNavigate();
   const { openSnackbar } = useSnackbar();
-  const [cartItems, setCartItems] = useState(mockCartItems);
+  const [cartItems, setCartItems] = useState<CartUIItem[]>([]);
+
+  const normalizeItem = (item: BackendCartItem): CartUIItem => {
+    const product: any =
+      typeof item.productId === "string"
+        ? { _id: item.productId }
+        : item.productId;
+    return {
+      id: product._id,
+      product: {
+        id: product._id,
+        name: product.name,
+        brand: product.brand,
+        price: item.price ?? product.minPrice ?? 0,
+        originalPrice: undefined,
+        images: product.images || [],
+    },
+      quantity: item.quantity,
+      // pass through attributes into a display-friendly field
+      attributes: item.attributes || {},
+    };
+  };
+
+  const fetchCart = async () => {
+    try {
+      const data: any = await cartService.getCart();
+      const items: CartUIItem[] = (data?.items || []).map(normalizeItem);
+      setCartItems(items);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
-  const updateQuantity = (itemId: string, newQuantity: number) => {
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(itemId);
       return;
     }
-    
-    setCartItems(prev => 
-      prev.map(item => 
-        item.id === itemId 
-          ? { ...item, quantity: newQuantity }
-          : item
-      )
-    );
+    try {
+      await cartService.updateQuantity({
+        productId: itemId,
+        quantity: newQuantity,
+      });
+      await fetchCart();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const removeItem = (itemId: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== itemId));
-    openSnackbar({
-      type: 'success',
-      text: 'Đã xóa sản phẩm khỏi giỏ hàng',
-      duration: 2000,
-    });
+  const removeItem = async (itemId: string) => {
+    try {
+      await cartService.removeItem(itemId);
+      await fetchCart();
+      openSnackbar({
+        type: "success",
+        text: "Đã xóa sản phẩm khỏi giỏ hàng",
+        duration: 2000,
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      return total + (item.product.price * item.quantity);
+      return total + item.product.price * item.quantity;
     }, 0);
   };
 
   const calculateDiscount = () => {
     return cartItems.reduce((total, item) => {
       if (item.product.originalPrice) {
-        return total + ((item.product.originalPrice - item.product.price) * item.quantity);
+        return (
+          total +
+          (item.product.originalPrice - item.product.price) * item.quantity
+        );
       }
       return total;
     }, 0);
@@ -98,18 +134,14 @@ function CartPage() {
   };
 
   const handleCheckout = () => {
-    navigate('/checkout', { state: { products: cartItems } });
+    navigate("/checkout", { state: { products: cartItems } });
   };
 
   if (cartItems.length === 0) {
     return (
       <Page className="bg-gray-50">
         {/* Header */}
-        <Header 
-          title="Giỏ hàng"
-          className="bg-primary-600"
-          showBackIcon
-        />
+        <Header title="Giỏ hàng" className="bg-primary-600" showBackIcon />
 
         {/* Empty Cart */}
         <Box className="flex flex-col items-center justify-center py-20 px-4">
@@ -122,7 +154,7 @@ function CartPage() {
           </Text>
           <Button
             variant="primary"
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="bg-primary-600 hover:bg-primary-700"
           >
             Mua sắm ngay
@@ -134,12 +166,12 @@ function CartPage() {
 
   return (
     <Page className="bg-gray-50">
-              {/* Header */}
-        <Header 
-          title={`Giỏ hàng (${cartItems.length})`}
-          className="bg-primary-600"
-          showBackIcon
-        />
+      {/* Header */}
+      <Header
+        title={`Giỏ hàng (${cartItems.length})`}
+        className="bg-primary-600"
+        showBackIcon
+      />
 
       {/* Cart Items */}
       <Box className="p-4 space-y-4 mt-[100px]">
@@ -163,7 +195,18 @@ function CartPage() {
                 <Text className="font-medium text-gray-900 mb-2 line-clamp-2">
                   {item.product.name}
                 </Text>
-                
+
+                {/* Variant Attributes */}
+                {item.attributes && Object.keys(item.attributes).length > 0 && (
+                  <Box className="mb-2">
+                    <Text className="text-xs text-gray-500">
+                      {Object.entries(item.attributes)
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join(" • ")}
+                    </Text>
+                  </Box>
+                )}
+
                 {/* Price */}
                 <Box className="flex items-center mb-3">
                   <Text className="text-lg font-bold text-primary-600">
@@ -199,7 +242,7 @@ function CartPage() {
                       <ChevronRight className="w-3 h-3" />
                     </Button>
                   </Box>
-                  
+
                   <Button
                     variant="secondary"
                     size="small"
@@ -218,7 +261,7 @@ function CartPage() {
       {/* Order Summary */}
       <Box className="bg-white border-t border-gray-200 p-4 space-y-3">
         <Text.Title size="large">Tóm tắt đơn hàng</Text.Title>
-        
+
         <Box className="space-y-2">
           <Box className="flex justify-between">
             <Text className="text-gray-600">Tạm tính:</Text>
@@ -226,7 +269,9 @@ function CartPage() {
           </Box>
           <Box className="flex justify-between">
             <Text className="text-gray-600">Giảm giá:</Text>
-            <Text className="text-green-600">-{formatPrice(calculateDiscount())}</Text>
+            <Text className="text-green-600">
+              -{formatPrice(calculateDiscount())}
+            </Text>
           </Box>
           <Box className="flex justify-between">
             <Text className="text-gray-600">Phí vận chuyển:</Text>

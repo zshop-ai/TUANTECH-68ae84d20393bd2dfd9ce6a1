@@ -1,38 +1,40 @@
-import React from 'react';
-import { Box, Text, Icon, Button } from 'zmp-ui';
-import { Product } from '../data/products';
+import React from "react";
+import { Box, Text, Icon, Button } from "zmp-ui";
+import { Product } from "../data/products";
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart?: (product: Product) => void;
+  onAddToCart?: (product: Product, variant?: any, quantity?: number) => void;
   onViewDetail?: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ 
-  product, 
-  onAddToCart, 
-  onViewDetail 
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onAddToCart,
+  onViewDetail,
 }) => {
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = product.originalPrice
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
     : 0;
 
   return (
     <Box className="bg-white shadow-sm border border-gray-100 overflow-hidden">
       {/* Product Image */}
-      <Box 
+      <Box
         className="relative h-48 bg-gray-100 cursor-pointer"
         onClick={() => onViewDetail?.(product)}
       >
-        <img 
-          src={product.images[0]} 
+        <img
+          src={product.images[0]}
           alt={product.name}
           className="w-full h-full object-cover"
         />
@@ -51,7 +53,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Info */}
       <Box className="p-3">
         <Text className="text-xs text-gray-500 mb-1">{product.brand}</Text>
-        <Text 
+        <Text
           className="font-medium text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-primary-600"
           onClick={() => onViewDetail?.(product)}
         >
@@ -60,7 +62,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Rating */}
         <Box className="flex items-center mb-2">
-          <Icon 
+          <Icon
             icon="zi-star-solid"
             className="w-4 h-4 text-yellow-400 mr-1 mb-2"
           />
@@ -87,10 +89,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
           size="small"
           fullWidth
           disabled={!product.inStock}
-          onClick={() => onAddToCart?.(product)}
+          onClick={() => {
+            if (product.variants && product.variants.length > 0) {
+              // If product has variants, redirect to detail page for selection
+              onViewDetail?.(product);
+            } else {
+              // If no variants, add directly to cart
+              onAddToCart?.(product);
+            }
+          }}
           className="bg-primary-600 hover:bg-primary-700"
         >
-          {product.inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+          {product.inStock
+            ? product.variants && product.variants.length > 0
+              ? "Chọn mua"
+              : "Thêm vào giỏ"
+            : "Hết hàng"}
         </Button>
       </Box>
     </Box>

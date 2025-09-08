@@ -1,112 +1,185 @@
-import React, { useState } from 'react';
-import { 
-  Page, 
-  Box, 
-  Text, 
-  Button, 
-  Header, 
-  useSnackbar
-} from 'zmp-ui';
-import { useNavigate, useLocation } from 'zmp-ui';
-import { Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
-import { Product } from '../data/products';
+import React, { useState } from "react";
+import { Page, Box, Text, Button, Header, useSnackbar, Spinner } from "zmp-ui";
+import { useNavigate, useLocation } from "zmp-ui";
+import { Star, ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
+import { Product } from "../data/products";
+import { useProductDetail } from "../hooks/useProducts";
+import VariantSelector from "../components/VariantSelector";
+import type { ProductVariant } from "../data/products";
+import { cartService } from "../services/cart";
+import { Toast } from "../components/Toast";
+import ProductMediaViewer from "../components/ProductMediaViewer";
 
 function ProductDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { openSnackbar } = useSnackbar();
-  const product = location.state?.product as Product;
+  const productFromState = location.state?.product as Product;
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    null
+  );
+
+  // Try to get product ID from state or URL params
+  const productId = productFromState?.id || location.pathname.split("/").pop();
+
+  // Use the product detail hook if we have a product ID
+  const {
+    product: apiProduct,
+    loading,
+    error,
+  } = useProductDetail(productId || "");
+
+  // Use API product if available, otherwise fall back to state product
+  const product = apiProduct || productFromState;
+
+  if (!productId && !productFromState) {
+    navigate("/");
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <Page className="bg-white">
+        <Header title="Chi tiết sản phẩm" />
+        <Box className="flex items-center justify-center h-64">
+          <Spinner />
+          <Text className="ml-2">Đang tải...</Text>
+        </Box>
+      </Page>
+    );
+  }
+
+  if (error) {
+    return (
+      <Page className="bg-white">
+        <Header title="Chi tiết sản phẩm" />
+        <Box className="text-center py-12">
+          <Text className="text-red-500 text-lg mb-2">Lỗi tải sản phẩm</Text>
+          <Text className="text-red-400 text-sm">{error}</Text>
+        </Box>
+      </Page>
+    );
+  }
 
   if (!product) {
-    navigate('/');
+    navigate("/");
     return null;
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = product.originalPrice
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
     : 0;
 
-  const handleAddToCart = () => {
-    openSnackbar({
-      type: 'success',
-      text: `Đã thêm ${quantity} ${product.name} vào giỏ hàng`,
-      duration: 2000,
+  const handleAddToCart = async (variant: ProductVariant, quantity: number) => {
+    try {
+      // Require variant selection when product has variants
+      if (product.variants && product.variants.length > 0 && !variant) {
+        Toast.error(
+          "Vui lòng chọn đầy đủ biến thể trước khi thêm vào giỏ",
+          3000
+        );
+        return;
+      }
+
+      const attributesMap = variant?.attributes?.length
+        ? variant.attributes.reduce((acc: Record<string, string>, attr) => {
+            acc[attr.name] = attr.value;
+            return acc;
+          }, {})
+        : undefined;
+
+      await cartService.addItem({
+        productId: product.id,
+        quantity,
+        attributes: {
+          ...(attributesMap || {}),
+          ...(variant?.sku ? { sku: variant.sku } : {}),
+        },
+      });
+      Toast.success(
+        `Đã thêm ${quantity} ${product.name}${
+          variant?.sku ? ` (${variant.sku})` : ""
+        } vào giỏ hàng`,
+        2000
+      );
+    } catch (e: any) {
+      Toast.error(e?.message || "Không thể thêm vào giỏ hàng", 3000);
+    }
+  };
+
+  const handleBuyNow = (variant: ProductVariant, quantity: number) => {
+    navigate("/checkout", {
+      state: {
+        products: [
+          {
+            ...product,
+            quantity,
+            selectedVariant: variant,
+            variantSku: variant.sku,
+            variantPrice: variant.price,
+          },
+        ],
+      },
     });
   };
 
-  const handleBuyNow = () => {
-    navigate('/checkout', { state: { products: [{ ...product, quantity }] } });
+  const handleVariantChange = (variant: ProductVariant) => {
+    setSelectedVariant(variant);
   };
 
   const increaseQuantity = () => {
-    setQuantity(prev => prev + 1);
+    setQuantity((prev) => prev + 1);
   };
 
   const decreaseQuantity = () => {
     if (quantity > 1) {
-      setQuantity(prev => prev - 1);
+      setQuantity((prev) => prev - 1);
     }
   };
 
   return (
     <Page className="bg-white">
       {/* Header */}
-      <Header 
+      <Header
         title="Chi tiết sản phẩm"
         className="bg-primary-600 text-white"
         showBackIcon
       />
 
-      {/* Product Images */}
-      <Box className="relative h-80 bg-gray-100">
-        <img
-          src={product.images[selectedImage]}
-          alt={product.name}
-          className="w-full h-full object-cover"
+      {/* Product Media Viewer */}
+      <Box className="p-4">
+        <ProductMediaViewer
+          images={product.images}
+          videoUrl={product.video_url}
+          selectedImage={selectedImage}
+          onImageChange={setSelectedImage}
         />
+
+        {/* Discount Badge */}
         {discount > 0 && (
-          <Box className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-md text-sm font-semibold">
+          <Box className="absolute top-6 left-6 bg-red-500 text-white px-3 py-1 rounded-md text-sm font-semibold z-10">
             -{discount}%
           </Box>
         )}
+
+        {/* Out of Stock Overlay */}
         {!product.inStock && (
-          <Box className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <Box className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
             <Text className="text-white font-semibold text-lg">Hết hàng</Text>
           </Box>
         )}
       </Box>
-
-      {/* Image Thumbnails */}
-      {product.images.length > 1 && (
-        <Box className="p-4 bg-gray-50">
-          <Box className="flex space-x-2 overflow-x-auto">
-            {product.images.map((image, index) => (
-              <Box
-                key={index}
-                className={`w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 ${
-                  selectedImage === index ? 'border-primary-600' : 'border-gray-200'
-                }`}
-                onClick={() => setSelectedImage(index)}
-              >
-                <img
-                  src={image}
-                  alt={`${product.name} ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      )}
 
       {/* Product Info */}
       <Box className="p-4 space-y-4">
@@ -122,9 +195,13 @@ function ProductDetailPage() {
         <Box className="flex items-center">
           <Box className="flex items-center mr-2">
             {[...Array(5)].map((_, i) => (
-              <Star 
+              <Star
                 key={i}
-                className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                className={`w-4 h-4 ${
+                  i < Math.floor(product.rating)
+                    ? "text-yellow-400 fill-current"
+                    : "text-gray-300"
+                }`}
               />
             ))}
           </Box>
@@ -190,60 +267,72 @@ function ProductDetailPage() {
         {/* Divider */}
         <Box className="border-t border-gray-200 my-4" />
 
-        {/* Quantity Selector */}
-        <Box>
-          <Text.Title size="large" className="mb-3">
-            Số lượng
-          </Text.Title>
-          <Box className="flex items-center space-x-4">
+        {/* Variant Selector or Simple Quantity Selector */}
+        {product.variants && product.variants.length > 0 ? (
+          <VariantSelector
+            variants={product.variants}
+            selectedVariant={selectedVariant}
+            onVariantChange={handleVariantChange}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
+          />
+        ) : (
+          <Box>
+            <Text.Title size="large" className="mb-3">
+              Số lượng
+            </Text.Title>
+            <Box className="flex items-center space-x-4">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={decreaseQuantity}
+                disabled={quantity <= 1}
+                className="w-10 h-10 rounded-full"
+              >
+                <ChevronLeft />
+              </Button>
+              <Text className="text-lg font-semibold min-w-8 text-center">
+                {quantity}
+              </Text>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={increaseQuantity}
+                className="w-10 h-10 rounded-full"
+              >
+                <ChevronRight />
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </Box>
+
+      {/* Bottom Action Buttons - Only show if no variants */}
+      {(!product.variants || product.variants.length === 0) && (
+        <Box className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+          <Box className="flex space-x-3">
             <Button
               variant="secondary"
-              size="small"
-              onClick={decreaseQuantity}
-              disabled={quantity <= 1}
-              className="w-10 h-10 rounded-full"
+              fullWidth
+              disabled={!product.inStock}
+              onClick={() => handleAddToCart({} as ProductVariant, quantity)}
+              className="border-primary-600 text-primary-600 hover:bg-primary-50"
             >
-              <ChevronLeft />
+              <ShoppingCart className="mr-2" />
+              Thêm vào giỏ
             </Button>
-            <Text className="text-lg font-semibold min-w-8 text-center">
-              {quantity}
-            </Text>
             <Button
-              variant="secondary"
-              size="small"
-              onClick={increaseQuantity}
-              className="w-10 h-10 rounded-full"
+              variant="primary"
+              fullWidth
+              disabled={!product.inStock}
+              onClick={() => handleBuyNow({} as ProductVariant, quantity)}
+              className="bg-primary-600 hover:bg-primary-700"
             >
-              <ChevronRight />
+              Mua ngay
             </Button>
           </Box>
         </Box>
-      </Box>
-
-      {/* Bottom Action Buttons */}
-      <Box className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <Box className="flex space-x-3">
-          <Button
-            variant="secondary"
-            fullWidth
-            disabled={!product.inStock}
-            onClick={handleAddToCart}
-            className="border-primary-600 text-primary-600 hover:bg-primary-50"
-          >
-            <ShoppingCart className="mr-2" />
-            Thêm vào giỏ
-          </Button>
-          <Button
-            variant="primary"
-            fullWidth
-            disabled={!product.inStock}
-            onClick={handleBuyNow}
-            className="bg-primary-600 hover:bg-primary-700"
-          >
-            Mua ngay
-          </Button>
-        </Box>
-      </Box>
+      )}
 
       {/* Bottom Spacing */}
       <Box className="h-24" />
