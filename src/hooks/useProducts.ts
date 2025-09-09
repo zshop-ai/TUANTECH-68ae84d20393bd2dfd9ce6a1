@@ -37,7 +37,6 @@ export function useProducts(
       setProducts(transformedProducts);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
-      console.error("Error fetching products:", err);
     } finally {
       setLoading(false);
     }
@@ -84,7 +83,6 @@ export function useFeaturedProducts(): UseFeaturedProductsReturn {
       setError(
         err instanceof Error ? err.message : "Failed to fetch featured products"
       );
-      console.error("Error fetching featured products:", err);
     } finally {
       setLoading(false);
     }
@@ -129,7 +127,6 @@ export function useNewProducts(): UseNewProductsReturn {
       setError(
         err instanceof Error ? err.message : "Failed to fetch new products"
       );
-      console.error("Error fetching new products:", err);
     } finally {
       setLoading(false);
     }
@@ -174,7 +171,6 @@ export function useBestSellers(): UseBestSellersReturn {
       setError(
         err instanceof Error ? err.message : "Failed to fetch best sellers"
       );
-      console.error("Error fetching best sellers:", err);
     } finally {
       setLoading(false);
     }
@@ -218,7 +214,6 @@ export function useProductDetail(productId: string): UseProductDetailReturn {
       setProduct(transformedProduct);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch product");
-      console.error("Error fetching product:", err);
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Page, 
-  Box, 
-  Text, 
-  Button, 
-  Header
-} from 'zmp-ui';
-import { useNavigate } from 'zmp-ui';
-import { MapPin, Edit, Trash2, Plus, Check } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Page, Box, Text, Button, Header } from "zmp-ui";
+import { useNavigate } from "zmp-ui";
+import { MapPin, Edit, Trash2, Plus, Check } from "lucide-react";
 
 function AddressPage() {
   const navigate = useNavigate();
@@ -16,71 +10,71 @@ function AddressPage() {
     // User 1: Nguyễn Thị Anh
     [
       {
-        id: '1',
-        name: 'Nguyễn Thị Anh',
-        phone: '0123456789',
-        address: '123 Đường ABC, Phường XYZ, Quận 1',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: true
+        id: "1",
+        name: "Nguyễn Thị Anh",
+        phone: "0123456789",
+        address: "123 Đường ABC, Phường XYZ, Quận 1",
+        city: "TP. Hồ Chí Minh",
+        isDefault: true,
       },
       {
-        id: '2',
-        name: 'Nguyễn Thị Anh',
-        phone: '0123456789',
-        address: '456 Đường DEF, Phường GHI, Quận 3',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: false
-      }
+        id: "2",
+        name: "Nguyễn Thị Anh",
+        phone: "0123456789",
+        address: "456 Đường DEF, Phường GHI, Quận 3",
+        city: "TP. Hồ Chí Minh",
+        isDefault: false,
+      },
     ],
     // User 2: Trần Văn Minh
     [
       {
-        id: '3',
-        name: 'Trần Văn Minh',
-        phone: '0987654321',
-        address: '789 Đường HIJ, Phường KLM, Quận 7',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: true
-      }
+        id: "3",
+        name: "Trần Văn Minh",
+        phone: "0987654321",
+        address: "789 Đường HIJ, Phường KLM, Quận 7",
+        city: "TP. Hồ Chí Minh",
+        isDefault: true,
+      },
     ],
     // User 3: Lê Thị Hương
     [
       {
-        id: '4',
-        name: 'Lê Thị Hương',
-        phone: '0369852147',
-        address: '321 Đường NOP, Phường QRS, Quận 2',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: true
+        id: "4",
+        name: "Lê Thị Hương",
+        phone: "0369852147",
+        address: "321 Đường NOP, Phường QRS, Quận 2",
+        city: "TP. Hồ Chí Minh",
+        isDefault: true,
       },
       {
-        id: '5',
-        name: 'Lê Thị Hương',
-        phone: '0369852147',
-        address: '654 Đường TUV, Phường WXY, Quận 9',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: false
+        id: "5",
+        name: "Lê Thị Hương",
+        phone: "0369852147",
+        address: "654 Đường TUV, Phường WXY, Quận 9",
+        city: "TP. Hồ Chí Minh",
+        isDefault: false,
       },
       {
-        id: '6',
-        name: 'Lê Thị Hương',
-        phone: '0369852147',
-        address: '987 Đường ZAB, Phường CDE, Quận Bình Thạnh',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: false
-      }
+        id: "6",
+        name: "Lê Thị Hương",
+        phone: "0369852147",
+        address: "987 Đường ZAB, Phường CDE, Quận Bình Thạnh",
+        city: "TP. Hồ Chí Minh",
+        isDefault: false,
+      },
     ],
     // User 4: Phạm Hoàng Nam
     [
       {
-        id: '7',
-        name: 'Phạm Hoàng Nam',
-        phone: '0521478963',
-        address: '147 Đường FGH, Phường IJK, Quận 10',
-        city: 'TP. Hồ Chí Minh',
-        isDefault: true
-      }
-    ]
+        id: "7",
+        name: "Phạm Hoàng Nam",
+        phone: "0521478963",
+        address: "147 Đường FGH, Phường IJK, Quận 10",
+        city: "TP. Hồ Chí Minh",
+        isDefault: true,
+      },
+    ],
   ];
 
   // For demo, we'll use a simple counter to cycle through users
@@ -91,37 +85,37 @@ function AddressPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setUserIndex((prev) => (prev + 1) % mockAddressesData.length);
-      setAddresses(mockAddressesData[(userIndex + 1) % mockAddressesData.length]);
+      setAddresses(
+        mockAddressesData[(userIndex + 1) % mockAddressesData.length]
+      );
     }, 10000); // Change user every 10 seconds for demo
     return () => clearInterval(interval);
   }, [userIndex]);
 
   const handleSetDefault = (addressId: string) => {
-    setAddresses(prev => 
-      prev.map(addr => ({
+    setAddresses((prev) =>
+      prev.map((addr) => ({
         ...addr,
-        isDefault: addr.id === addressId
+        isDefault: addr.id === addressId,
       }))
     );
   };
 
   const handleDeleteAddress = (addressId: string) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+    setAddresses((prev) => prev.filter((addr) => addr.id !== addressId));
   };
 
   const handleEditAddress = (address: any) => {
     // Mock edit address
-    console.log('Edit address:', address);
   };
 
   const handleAddAddress = () => {
     // Mock add new address
-    console.log('Add new address');
   };
 
   return (
     <Page className="bg-gray-50">
-      <Header 
+      <Header
         title="Địa chỉ giao hàng"
         className="bg-primary-600"
         showBackIcon
@@ -131,8 +125,12 @@ function AddressPage() {
         {addresses.length === 0 ? (
           <Box className="text-center py-20">
             <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <Text className="text-gray-500 text-lg mb-2">Chưa có địa chỉ giao hàng</Text>
-            <Text className="text-gray-400 mb-6">Hãy thêm địa chỉ để thuận tiện cho việc giao hàng</Text>
+            <Text className="text-gray-500 text-lg mb-2">
+              Chưa có địa chỉ giao hàng
+            </Text>
+            <Text className="text-gray-400 mb-6">
+              Hãy thêm địa chỉ để thuận tiện cho việc giao hàng
+            </Text>
             <Button
               variant="primary"
               onClick={handleAddAddress}
@@ -144,7 +142,10 @@ function AddressPage() {
         ) : (
           <>
             {addresses.map((address) => (
-              <Box key={address.id} className="bg-white rounded-lg p-4 shadow-sm">
+              <Box
+                key={address.id}
+                className="bg-white rounded-lg p-4 shadow-sm"
+              >
                 {/* Address Header */}
                 <Box className="flex items-center justify-between mb-3">
                   <Box className="flex items-center space-x-2">
@@ -180,15 +181,9 @@ function AddressPage() {
 
                 {/* Address Details */}
                 <Box className="space-y-1 mb-3">
-                  <Text className="text-gray-600">
-                    📞 {address.phone}
-                  </Text>
-                  <Text className="text-gray-900">
-                    📍 {address.address}
-                  </Text>
-                  <Text className="text-gray-600">
-                    🏙️ {address.city}
-                  </Text>
+                  <Text className="text-gray-600">📞 {address.phone}</Text>
+                  <Text className="text-gray-900">📍 {address.address}</Text>
+                  <Text className="text-gray-600">🏙️ {address.city}</Text>
                 </Box>
 
                 {/* Action Buttons */}

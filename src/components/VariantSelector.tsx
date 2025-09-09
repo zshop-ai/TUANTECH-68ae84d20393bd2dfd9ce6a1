@@ -45,6 +45,12 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
     return variants.filter((variant) => variant.stock > 0);
   }, [variants]);
 
+  // Attribute names list for completeness checks
+  const attributeNames = React.useMemo(
+    () => Object.keys(attributeGroups),
+    [attributeGroups]
+  );
+
   // Require explicit user selection of variant; do not auto-select any variant
 
   // Ensure quantity doesn't exceed selected variant stock
@@ -71,46 +77,55 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   }, [selectedAttributes, availableVariants, selectedVariant, onVariantChange]);
 
   const handleAttributeChange = (attributeName: string, value: string) => {
-    console.log("handleAttributeChange called:", { attributeName, value });
-    console.log("Current selectedAttributes:", selectedAttributes);
-    console.log("Available variants:", availableVariants);
-
     // Always update the selected attribute, even if the combination might not be complete
     const newAttributes = {
       ...selectedAttributes,
       [attributeName]: value,
     };
 
-    console.log("New attributes:", newAttributes);
     setSelectedAttributes(newAttributes);
 
-    // Find matching variant with the new attributes
-    const matchingVariant = availableVariants.find((variant) =>
-      variant.attributes.every(
-        (attr) => newAttributes[attr.name] === attr.value
-      )
+    // Filter variants that match current partial selection
+    const partiallyMatching = availableVariants.filter((variant) =>
+      variant.attributes.every((attr) => {
+        const sel = newAttributes[attr.name];
+        return sel === undefined || sel === attr.value;
+      })
     );
 
-    console.log("Matching variant:", matchingVariant);
-
-    if (matchingVariant) {
-      onVariantChange(matchingVariant);
+    // If all attributes are selected, select the exact matching variant
+    const hasFullSelection = attributeNames.every(
+      (name) => newAttributes[name] !== undefined
+    );
+    if (hasFullSelection) {
+      const exactMatch = partiallyMatching.find((variant) =>
+        variant.attributes.every(
+          (attr) => newAttributes[attr.name] === attr.value
+        )
+      );
+      if (exactMatch && exactMatch !== selectedVariant) {
+        onVariantChange(exactMatch);
+        setQuantity(1);
+      }
     }
   };
 
   // Check if a specific attribute value is available
   const isAttributeValueAvailable = (attributeName: string, value: string) => {
-    // Check if this specific attribute value exists in any available variant
-    const isAvailable = availableVariants.some((variant) =>
-      variant.attributes.some(
+    // Check availability based on current partial selections for other attributes
+    return availableVariants.some((variant) => {
+      const matchesCandidate = variant.attributes.some(
         (attr) => attr.name === attributeName && attr.value === value
-      )
-    );
-    console.log(
-      `isAttributeValueAvailable(${attributeName}, ${value}):`,
-      isAvailable
-    );
-    return isAvailable;
+      );
+      if (!matchesCandidate) return false;
+
+      // All other selected attributes must also match this variant
+      return variant.attributes.every((attr) => {
+        if (attr.name === attributeName) return true;
+        const sel = selectedAttributes[attr.name];
+        return sel === undefined || sel === attr.value;
+      });
+    });
   };
 
   const increaseQuantity = () => {

@@ -37,7 +37,6 @@ export function useCategories(): UseCategoriesReturn {
       setError(
         err instanceof Error ? err.message : "Failed to fetch categories"
       );
-      console.error("Error fetching categories:", err);
     } finally {
       setLoading(false);
     }
@@ -81,7 +80,6 @@ export function useCategoryDetail(categoryId: string): UseCategoryDetailReturn {
       setCategory(transformedCategory);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch category");
-      console.error("Error fetching category:", err);
     } finally {
       setLoading(false);
     }
