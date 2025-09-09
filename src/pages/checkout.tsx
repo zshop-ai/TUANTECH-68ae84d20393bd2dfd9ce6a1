@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Page, Box, Text, Button, Header, useSnackbar, Input } from "zmp-ui";
 import { useNavigate, useLocation } from "zmp-ui";
 import { CreditCard, Building2, Wallet } from "lucide-react";
 import { cartService } from "../services/cart";
+import { locationService, type LocationPrediction } from "../services/location";
 
 function CheckoutPage() {
   const navigate = useNavigate();
@@ -26,6 +27,68 @@ function CheckoutPage() {
     paymentMethod: "cod",
     note: "",
   });
+
+  // Location autocomplete states
+  const [addressQuery, setAddressQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<LocationPrediction[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const addressWrapRef = useRef<HTMLDivElement>(null!);
+  const suppressNextFetchRef = useRef<boolean>(false);
+
+  // Keep addressQuery in sync with formData.address
+  useEffect(() => {
+    setAddressQuery(formData.address || "");
+  }, [formData.address]);
+
+  // Debounced fetch for address suggestions
+  useEffect(() => {
+    const controller = new AbortController();
+
+    if (suppressNextFetchRef.current) {
+      suppressNextFetchRef.current = false;
+      return;
+    }
+
+    if (!addressQuery || addressQuery.trim().length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsLoadingSuggestions(true);
+        const res = await locationService.autocomplete(addressQuery.trim());
+        setSuggestions(res.predictions || []);
+        setShowSuggestions(true);
+      } catch (_) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [addressQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (
+        addressWrapRef.current &&
+        !addressWrapRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -194,12 +257,64 @@ function CheckoutPage() {
               onChange={(e) => handleInputChange("email", e.target.value)}
             />
 
-            <Input
-              label="Địa chỉ *"
-              placeholder="Nhập địa chỉ giao hàng"
-              value={formData.address}
-              onChange={(e) => handleInputChange("address", e.target.value)}
-            />
+            <Box className="relative" ref={addressWrapRef}>
+              <Input
+                label="Địa chỉ *"
+                placeholder="Nhập địa chỉ giao hàng"
+                value={formData.address}
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowSuggestions(true);
+                }}
+                onChange={(e) => handleInputChange("address", e.target.value)}
+              />
+
+              {showSuggestions &&
+                (suggestions.length > 0 || isLoadingSuggestions) && (
+                  <Box className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-md max-h-64 overflow-auto">
+                    {isLoadingSuggestions && (
+                      <Box className="p-3 text-sm text-gray-500">
+                        Đang tải gợi ý...
+                      </Box>
+                    )}
+
+                    {!isLoadingSuggestions &&
+                      suggestions.map((s) => {
+                        const main =
+                          s.structured_formatting?.main_text || s.description;
+                        const secondary =
+                          s.structured_formatting?.secondary_text || "";
+                        return (
+                          <Box
+                            key={s.place_id}
+                            className="px-3 py-2 cursor-pointer hover:bg-gray-50"
+                            // Prevent input from losing focus while selecting
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              suppressNextFetchRef.current = true;
+                              handleInputChange("address", s.description);
+                              setShowSuggestions(false);
+                              setSuggestions([]);
+                              const inputEl =
+                                addressWrapRef.current?.querySelector(
+                                  "input"
+                                ) as HTMLInputElement | null;
+                              inputEl?.blur();
+                            }}
+                          >
+                            <Text className="text-gray-900 text-sm">
+                              {main}
+                            </Text>
+                            {secondary && (
+                              <Text className="text-gray-500 text-xs">
+                                {secondary}
+                              </Text>
+                            )}
+                          </Box>
+                        );
+                      })}
+                  </Box>
+                )}
+            </Box>
 
             <Box className="grid grid-cols-2 gap-3">
               <Input
