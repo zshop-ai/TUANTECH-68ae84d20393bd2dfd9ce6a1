@@ -28,10 +28,27 @@ export interface UpdateQuantityPayload {
   quantity: number;
 }
 
+export interface CheckoutItem {
+  productId: string;
+  variant: {
+    sku: string;
+    name: string;
+    price: number;
+    stock: number;
+  };
+  quantity: number;
+}
+
 export interface CheckoutPayload {
+  mode: "buy_now" | "from_cart";
+  shopId: string;
+  items: CheckoutItem[];
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   address?: string;
+  paymentMethod?: string;
+  shippingFee?: number;
   notes?: string;
 }
 
@@ -81,5 +98,71 @@ export const cartService = {
       `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CART_CHECKOUT}`
     );
     return apiPost(url, payload);
+  },
+
+  // Helper function to create checkout payload for buy now
+  createBuyNowPayload(
+    product: any,
+    variant: any,
+    quantity: number,
+    customerInfo: {
+      customerName: string;
+      customerPhone: string;
+      customerEmail?: string;
+      address?: string;
+      paymentMethod?: string;
+      shippingFee?: number;
+      notes?: string;
+    }
+  ): CheckoutPayload {
+    return {
+      mode: "buy_now",
+      shopId: API_CONFIG.SHOP_ID,
+      items: [
+        {
+          productId: product.id,
+          variant: {
+            sku: variant?.sku || variant?.id || "default",
+            name: variant?.name || product.name,
+            price: variant?.price || product.price,
+            stock: variant?.stock || 999, // Will be validated by backend
+          },
+          quantity,
+        },
+      ],
+      ...customerInfo,
+    };
+  },
+
+  // Helper function to create checkout payload from cart
+  createFromCartPayload(
+    cartItems: any[],
+    customerInfo: {
+      customerName: string;
+      customerPhone: string;
+      customerEmail?: string;
+      address?: string;
+      paymentMethod?: string;
+      shippingFee?: number;
+      notes?: string;
+    }
+  ): CheckoutPayload {
+    const items: CheckoutItem[] = cartItems.map((item) => ({
+      productId: item.product.id,
+      variant: {
+        sku: item.attributes?.sku || item.attributes?.variantId || "default",
+        name: item.attributes?.variantName || item.product.name,
+        price: item.product.price,
+        stock: 999, // Will be validated by backend
+      },
+      quantity: item.quantity,
+    }));
+
+    return {
+      mode: "from_cart",
+      shopId: API_CONFIG.SHOP_ID,
+      items,
+      ...customerInfo,
+    };
   },
 };

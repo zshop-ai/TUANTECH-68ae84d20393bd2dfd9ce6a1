@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { Page, Box, Text, Button, Header, useSnackbar, Spinner } from "zmp-ui";
 import { useNavigate, useLocation } from "zmp-ui";
 import { Star, ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
-import { Product } from "../data/products";
+import { Product } from "../core/types/product";
 import { useProductDetail } from "../hooks/useProducts";
 import VariantSelector from "../components/VariantSelector";
-import type { ProductVariant } from "../data/products";
+import type { ProductVariant } from "../core/types/product";
 import { cartService } from "../services/cart";
 import { Toast } from "../components/Toast";
 import ProductMediaViewer from "../components/ProductMediaViewer";
@@ -130,6 +130,7 @@ function ProductDetailPage() {
             variantPrice: variant.price,
           },
         ],
+        mode: "buy_now",
       },
     });
   };

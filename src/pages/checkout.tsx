@@ -10,6 +10,7 @@ function CheckoutPage() {
   const location = useLocation();
   const { openSnackbar } = useSnackbar();
   const products = location.state?.products || [];
+  const mode = location.state?.mode || "from_cart"; // 'buy_now' or 'from_cart'
 
   // Redirect if no products
   if (products.length === 0) {
@@ -128,12 +129,38 @@ function CheckoutPage() {
     }
 
     try {
-      await cartService.checkout({
+      const customerInfo = {
         customerName: formData.fullName,
         customerPhone: formData.phone,
+        customerEmail: formData.email || undefined,
         address: formData.address,
+        paymentMethod: formData.paymentMethod || "cod",
+        shippingFee: 30000, // Fixed shipping fee as per your backend
         notes: formData.note,
-      });
+      };
+
+      let checkoutPayload;
+
+      if (mode === "buy_now") {
+        // For buy now, we expect a single product with variant info
+        const product = products[0];
+        const variant = product.selectedVariant || {};
+        checkoutPayload = cartService.createBuyNowPayload(
+          product,
+          variant,
+          product.quantity || 1,
+          customerInfo
+        );
+      } else {
+        // For from_cart, use all products
+        checkoutPayload = cartService.createFromCartPayload(
+          products,
+          customerInfo
+        );
+      }
+
+      const response = await cartService.checkout(checkoutPayload);
+      const order = response.order;
 
       openSnackbar({
         type: "success",
@@ -141,11 +168,18 @@ function CheckoutPage() {
         duration: 3000,
       });
 
-      navigate("/order-success");
+      // Navigate to order success page with order details
+      navigate("/order-success", {
+        state: {
+          order: order,
+          orderId: order?.id || order?._id,
+        },
+      });
     } catch (e: any) {
+      console.error("Checkout error:", e);
       openSnackbar({
         type: "error",
-        text: e?.message || "Đặt hàng thất bại",
+        text: e?.message || "Đặt hàng thất bại. Vui lòng thử lại.",
         duration: 3000,
       });
     }
@@ -315,23 +349,6 @@ function CheckoutPage() {
                   </Box>
                 )}
             </Box>
-
-            <Box className="grid grid-cols-2 gap-3">
-              <Input
-                label="Tỉnh/Thành phố"
-                placeholder="Chọn tỉnh/thành phố"
-                value={formData.city}
-                onChange={(e) => handleInputChange("city", e.target.value)}
-              />
-
-              <Input
-                label="Quận/Huyện"
-                placeholder="Chọn quận/huyện"
-                value={formData.district}
-                onChange={(e) => handleInputChange("district", e.target.value)}
-              />
-            </Box>
-
             <Input
               label="Ghi chú"
               placeholder="Ghi chú cho đơn hàng (không bắt buộc)"

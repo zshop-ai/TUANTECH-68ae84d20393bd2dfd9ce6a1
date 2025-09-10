@@ -53,7 +53,7 @@ function CartPage() {
         price: item.price ?? product.minPrice ?? 0,
         originalPrice: undefined,
         images: product.images || [],
-    },
+      },
       quantity: item.quantity,
       // pass through attributes into a display-friendly field
       attributes: item.attributes || {},
@@ -134,7 +134,12 @@ function CartPage() {
   };
 
   const handleCheckout = () => {
-    navigate("/checkout", { state: { products: cartItems } });
+    navigate("/checkout", {
+      state: {
+        products: cartItems,
+        mode: "from_cart",
+      },
+    });
   };
 
   if (cartItems.length === 0) {
