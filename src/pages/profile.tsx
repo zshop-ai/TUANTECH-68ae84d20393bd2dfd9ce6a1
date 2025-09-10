@@ -18,7 +18,7 @@ import {
   Edit,
   LogOut
 } from 'lucide-react';
-import BottomNavigation from '../components/BottomNavigation';
+import BottomNavigation from '../core/components/BottomNavigation';
 import ZaloLogin from '../components/ZaloLogin';
 import { authService, User as UserType } from '../services/auth';
 import { Toast, ToastContainer } from '../components/Toast';

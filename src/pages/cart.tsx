@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Page, Box, Text, Button, Header, useSnackbar, List } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
 import { ChevronLeft, ChevronRight, Trash2, ShoppingCart } from "lucide-react";
-import BottomNavigation from "../components/BottomNavigation";
+import BottomNavigation from "../core/components/BottomNavigation";
 import { cartService } from "../services/cart";
 
 type BackendCartItem = {
@@ -303,7 +303,7 @@ function CartPage() {
       <Box className="h-20" />
 
       {/* Bottom Navigation */}
-      <BottomNavigation currentPage="cart" />
+      <BottomNavigation />
     </Page>
   );
 }

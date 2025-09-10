@@ -1,64 +1,33 @@
-import React, { useState, useMemo, useMemo as useReactMemo } from "react";
-import { Page, Box, Text, Button, Header, useSnackbar, Spinner } from "zmp-ui";
-import { useNavigate } from "zmp-ui";
-import { Search, Star } from "lucide-react";
+import React from 'react';
+import { 
+  Page, 
+  Box, 
+  Text, 
+  Button, 
+  Header, 
+  useSnackbar
+} from 'zmp-ui';
+import { useNavigate } from 'zmp-ui';
+import { Search, Star } from 'lucide-react';
 
-import ProductCard from "../components/ProductCard";
-import BottomNavigation from "../components/BottomNavigation";
-import { useProducts } from "../hooks/useProducts";
-import { useCategories } from "../hooks/useCategories";
+import ProductCard from '../core/components/ProductCard';
+import BottomNavigation from '../core/components/BottomNavigation';
+import { useProducts } from '../core/hooks/useProducts';
 
 const ProductsPage: React.FC = () => {
   const navigate = useNavigate();
   const { openSnackbar } = useSnackbar();
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const { 
+    filteredProducts, 
+    categories, 
+    selectedCategory, 
+    setSelectedCategory, 
+    searchQuery, 
+    setSearchQuery,
+    loading,
+    error
+  } = useProducts();
 
-  // Get categories from API
-  const { categories: apiCategories, loading: categoriesLoading } =
-    useCategories();
-
-  // Create categories list with "All" option
-  const categories = [
-    { id: "all", name: "Tất cả", icon: "zi-grid" },
-    ...apiCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      icon: cat.icon,
-    })),
-  ];
-
-  // Use the products hook with API integration
-  const query = useReactMemo(
-    () => ({
-      search: searchQuery || undefined,
-      categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
-      isActive: true,
-    }),
-    [searchQuery, selectedCategory]
-  );
-
-  const { products, loading, error } = useProducts({ query });
-
-  const filteredProducts = useMemo(() => {
-    let filtered = products;
-
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(
-        (product) => product.category === selectedCategory
-      );
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.brand.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return filtered;
-  }, [products, selectedCategory, searchQuery]);
 
   const handleAddToCart = (product: any, variant?: any, quantity?: number) => {
     const message = variant
@@ -118,8 +87,7 @@ const ProductsPage: React.FC = () => {
         {/* Products Grid */}
         {loading ? (
           <Box className="text-center py-12">
-            <Spinner />
-            <Text className="text-gray-500 text-lg mt-4">
+            <Text className="text-gray-500 text-lg">
               Đang tải sản phẩm...
             </Text>
           </Box>
@@ -157,7 +125,7 @@ const ProductsPage: React.FC = () => {
       <Box className="h-20" />
 
       {/* Bottom Navigation */}
-      <BottomNavigation currentPage="products" />
+      <BottomNavigation />
     </Page>
   );
 };
