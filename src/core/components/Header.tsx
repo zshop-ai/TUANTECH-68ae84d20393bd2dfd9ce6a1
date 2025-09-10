@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'zmp-ui';
 import { useCoreTheme } from '../theme/context';
+import { loadThemeFromEnv } from '../config/env-theme-loader';
 
 interface HeaderProps {
   className?: string;
@@ -9,6 +10,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const { currentTemplate } = useCoreTheme();
   const { brand, layout } = currentTemplate;
+  const envTheme = loadThemeFromEnv();
 
   const getHeaderClasses = () => {
     const baseClasses = 'text-white pt-12 pb-8 px-4 relative overflow-hidden';
@@ -38,13 +40,13 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         <Box className="flex items-center justify-between mb-6">
           <Box className="flex items-center">
             <img 
-              src={brand.logo} 
-              alt={brand.name} 
+              src={envTheme.logoUrl} 
+              alt={envTheme.projectName} 
               className="w-14 h-14 mr-4 rounded-full shadow-lg" 
             />
             <Box>
               <Text.Title size="large" className="text-white font-bold">
-                {brand.name}
+                {envTheme.projectName}
               </Text.Title>
               <Text className="text-white/80 text-sm">{brand.tagline}</Text>
             </Box>

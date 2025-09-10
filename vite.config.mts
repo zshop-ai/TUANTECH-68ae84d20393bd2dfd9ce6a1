@@ -16,5 +16,6 @@ export default () => {
         "@": "/src",
       },
     },
+    envPrefix: "VITE_", // Chỉ load các biến bắt đầu với VITE_
   });
 };

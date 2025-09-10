@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, Button } from 'zmp-ui';
 import { useNavigate } from 'zmp-ui';
 import { useCoreTheme } from '../theme/context';
+import { loadThemeFromEnv } from '../config/env-theme-loader';
 
 interface BannerProps {
   className?: string;
@@ -11,13 +12,14 @@ const Banner: React.FC<BannerProps> = ({ className = '' }) => {
   const navigate = useNavigate();
   const { currentTemplate } = useCoreTheme();
   const { content } = currentTemplate;
+  const envTheme = loadThemeFromEnv();
   
-  // Get the first banner or use a default
+  // Get the first banner or use env theme
   const banner = content.banners[0] || {
     id: '1',
-    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&h=500&fit=crop&crop=center',
-    title: 'DEFAULT TITLE',
-    subtitle: 'DEFAULT SUBTITLE'
+    image: envTheme.bannerUrl,
+    title: envTheme.projectName,
+    subtitle: 'NATURE\'S EMBRACE'
   };
 
   return (

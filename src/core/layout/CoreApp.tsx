@@ -25,6 +25,7 @@ import SettingsPage from '../../pages/settings';
 import SupportPage from '../../pages/support';
 import AboutPage from '../../pages/about';
 import TestPage from '../../pages/test';
+import ThemeDemoPage from '../../pages/theme-demo';
 
 interface CoreAppProps {
   defaultTemplateId?: string;
@@ -39,6 +40,7 @@ const CoreApp: React.FC<CoreAppProps> = ({ defaultTemplateId = 'cosmetic' }) => 
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/test" element={<TestPage />} />
+            <Route path="/theme-demo" element={<ThemeDemoPage />} />
             <Route path="/product-detail" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />

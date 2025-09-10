@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { TemplateConfig, CoreThemeContextType } from './types';
 import { availableTemplates, cosmeticTemplate } from './templates';
+import { loadThemeFromEnv, updateCSSVariablesFromEnv } from '../config/env-theme-loader';
 
 const CoreThemeContext = createContext<CoreThemeContextType | undefined>(undefined);
 
@@ -28,12 +29,23 @@ export const CoreThemeProvider: React.FC<CoreThemeProviderProps> = ({
   };
 
   const updateCSSVariables = (template: TemplateConfig) => {
+    
+    // Cập nhật CSS variables từ environment theme
+    const envTheme = loadThemeFromEnv();
+    updateCSSVariablesFromEnv(envTheme);
+    
+    // Cũng cập nhật từ template theme (fallback)
     const root = document.documentElement;
     const { primary, accent } = template.theme;
     
-    // Update primary colors
+    
+    // Update primary colors (only if env theme doesn't have them)
     Object.entries(primary).forEach(([key, value]) => {
-      root.style.setProperty(`--color-primary-${key}`, value);
+      const envKey = `--color-primary-${key}`;
+      const currentValue = root.style.getPropertyValue(envKey);
+      if (!currentValue) {
+        root.style.setProperty(envKey, value);
+      }
     });
     
     // Update accent colors if available
@@ -42,6 +54,7 @@ export const CoreThemeProvider: React.FC<CoreThemeProviderProps> = ({
         root.style.setProperty(`--color-accent-${key}`, value);
       });
     }
+    
   };
 
   useEffect(() => {
