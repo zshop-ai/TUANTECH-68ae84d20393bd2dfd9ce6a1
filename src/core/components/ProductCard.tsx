@@ -1,7 +1,7 @@
-import React from 'react';
-import { Box, Text, Icon, Button } from 'zmp-ui';
-import { useCoreTheme } from '../theme/context';
-import { Product } from '../types/product';
+import React from "react";
+import { Box, Text, Icon, Button } from "zmp-ui";
+import { useCoreTheme } from "../theme/context";
+import { Product } from "../types/product";
 
 interface ProductCardProps {
   product: Product;
@@ -10,35 +10,38 @@ interface ProductCardProps {
   className?: string;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ 
-  product, 
-  onAddToCart, 
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onAddToCart,
   onViewDetail,
-  className = ''
+  className = "",
 }) => {
   const { currentTemplate } = useCoreTheme();
   const { layout } = currentTemplate;
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = product.originalPrice
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
     : 0;
 
   const getCardClasses = () => {
-    const baseClasses = 'bg-white shadow-sm border border-gray-100 overflow-hidden';
-    
+    const baseClasses =
+      "bg-white shadow-sm border border-gray-100 overflow-hidden";
+
     switch (layout.cardStyle) {
-      case 'modern':
+      case "modern":
         return `${baseClasses} rounded-lg hover:shadow-lg transition-shadow`;
-      case 'classic':
+      case "classic":
         return `${baseClasses} rounded-none border-2`;
-      case 'minimal':
+      case "minimal":
         return `${baseClasses} rounded-none shadow-none border-0`;
       default:
         return `${baseClasses} rounded-lg hover:shadow-lg transition-shadow`;
@@ -48,12 +51,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <Box className={`${getCardClasses()} ${className}`}>
       {/* Product Image */}
-      <Box 
+      <Box
         className="relative h-48 bg-gray-100 cursor-pointer"
         onClick={() => onViewDetail?.(product)}
       >
-        <img 
-          src={product.images[0]} 
+        <img
+          src={product.images[0]}
           alt={product.name}
           className="w-full h-full object-cover"
         />
@@ -72,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Info */}
       <Box className="p-3">
         <Text className="text-xs text-gray-500 mb-1">{product.brand}</Text>
-        <Text 
+        <Text
           className="font-medium text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-primary-600"
           onClick={() => onViewDetail?.(product)}
         >
@@ -81,7 +84,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Rating */}
         <Box className="flex items-center mb-2">
-          <Icon 
+          <Icon
             icon="zi-star-solid"
             className="w-4 h-4 text-yellow-400 mr-1 mb-2"
           />
@@ -101,18 +104,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </Text>
           )}
         </Box>
-
-        {/* Add to Cart Button */}
-        <Button
-          variant="primary"
-          size="small"
-          fullWidth
-          disabled={!product.inStock}
-          onClick={() => onAddToCart?.(product)}
-          className="bg-primary-600 hover:bg-primary-700"
-        >
-          {product.inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
-        </Button>
       </Box>
     </Box>
   );

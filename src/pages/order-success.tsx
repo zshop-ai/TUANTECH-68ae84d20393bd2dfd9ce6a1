@@ -9,121 +9,140 @@ function OrderSuccessPage() {
   const order = location.state?.order;
   const orderId = location.state?.orderId;
 
+  const formatCurrency = (n?: number) =>
+    typeof n === "number"
+      ? new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(n)
+      : "Đang cập nhật";
+
+  const getStatusText = (status?: string) => {
+    switch (status) {
+      case "delivered":
+        return "Đã giao hàng";
+      case "confirmed":
+        return "Đang xử lý";
+      case "cancelled":
+        return "Đã hủy";
+      default:
+        return "Chờ xác nhận";
+    }
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case "delivered":
+        return "text-green-600";
+      case "confirmed":
+        return "text-blue-600";
+      case "cancelled":
+        return "text-red-600";
+      default:
+        return "text-amber-600";
+    }
+  };
+
   return (
     <Page className="bg-gray-50">
-      {/* Header */}
-      <Header
-        title="Đặt hàng thành công"
-        className="bg-primary-600 text-white"
-      />
+      <Header title="Đặt hàng thành công" className="bg-white shadow-sm" />
 
-      {/* Success Content */}
-      <Box className="flex flex-col items-center justify-center py-20 px-4">
-        {/* Success Icon */}
-        <Box className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle className="w-12 h-12 text-green-600" />
-        </Box>
-
-        {/* Success Message */}
-        <Text.Title size="xLarge" className="mb-2 text-center text-gray-900">
-          Đặt hàng thành công!
-        </Text.Title>
-
-        <Text className="text-gray-600 text-center mb-8 max-w-md">
-          Cảm ơn bạn đã mua sắm tại Veridian Bloom. Chúng tôi sẽ xử lý đơn hàng
-          và liên hệ với bạn trong thời gian sớm nhất.
-        </Text>
-
-        {/* Order Info */}
-        <Box className="bg-white rounded-lg p-6 w-full max-w-md mb-8">
-          <Text.Title size="large" className="mb-4 text-center">
-            Thông tin đơn hàng
-          </Text.Title>
-
-          <Box className="space-y-3">
-            <Box className="flex justify-between">
-              <Text className="text-gray-600">Mã đơn hàng:</Text>
-              <Text className="font-semibold">
-                {orderId ? `#${orderId}` : "#VB2024001"}
+      <Box
+        className="px-4 pt-6 mt-[60px]"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 112px)",
+        }}
+      >
+        <Box className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <Box className="flex items-center gap-4 mb-4">
+            <Box className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-7 h-7 text-green-600" />
+            </Box>
+            <Box>
+              <Text.Title size="large" className="text-gray-900">
+                Đặt hàng thành công
+              </Text.Title>
+              <Text className="text-gray-500">
+                Cảm ơn bạn đã mua sắm tại Veridian Bloom
               </Text>
             </Box>
-            <Box className="flex justify-between">
-              <Text className="text-gray-600">Ngày đặt:</Text>
-              <Text>
+          </Box>
+
+          <Box className="grid grid-cols-2 gap-3 mb-4">
+            <Box className="bg-gray-50 rounded-lg p-3">
+              <Text className="text-xs text-gray-500">Mã đơn hàng</Text>
+              <Text className="font-semibold">
+                #{orderId || "Đang cập nhật"}
+              </Text>
+            </Box>
+            <Box className="bg-gray-50 rounded-lg p-3">
+              <Text className="text-xs text-gray-500">Ngày đặt</Text>
+              <Text className="font-semibold">
                 {order?.createdAt
                   ? new Date(order.createdAt).toLocaleDateString("vi-VN")
                   : new Date().toLocaleDateString("vi-VN")}
               </Text>
             </Box>
-            <Box className="flex justify-between">
-              <Text className="text-gray-600">Trạng thái:</Text>
-              <Text className="text-green-600 font-semibold">
-                {order?.paymentStatus === "pending"
-                  ? "Chờ xác nhận"
-                  : "Đã xác nhận"}
+            <Box className="bg-gray-50 rounded-lg p-3">
+              <Text className="text-xs text-gray-500">Trạng thái</Text>
+              <Text
+                className={`font-semibold ${getStatusColor(order?.status)}`}
+              >
+                {getStatusText(order?.status)}
               </Text>
             </Box>
-            <Box className="flex justify-between">
-              <Text className="text-gray-600">Tổng tiền:</Text>
+            <Box className="bg-gray-50 rounded-lg p-3">
+              <Text className="text-xs text-gray-500">Tổng tiền</Text>
               <Text className="font-semibold text-primary-600">
-                {order?.totalAmount
-                  ? new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(order.totalAmount)
-                  : "Đang cập nhật"}
+                {formatCurrency(order?.totalAmount)}
               </Text>
             </Box>
-            <Box className="flex justify-between">
-              <Text className="text-gray-600">Phương thức thanh toán:</Text>
-              <Text>
-                {order?.paymentMethod === "cod"
-                  ? "Thanh toán khi nhận hàng"
-                  : order?.paymentMethod === "bank"
-                  ? "Chuyển khoản ngân hàng"
-                  : order?.paymentMethod === "momo"
-                  ? "Ví MoMo"
-                  : "COD"}
+          </Box>
+
+          <Box className="mt-4">
+            <Text className="text-sm text-gray-600 mb-2">
+              Thông tin người nhận
+            </Text>
+            <Box className="rounded-lg border border-gray-100 p-3">
+              <Text className="font-medium text-gray-900">
+                {order?.customerName || "Khách hàng"}
               </Text>
-            </Box>
-            <Box className="flex justify-between">
-              <Text className="text-gray-600">Dự kiến giao:</Text>
-              <Text>2-3 ngày làm việc</Text>
+              <Text className="text-gray-600">
+                {order?.customerPhone || "Số điện thoại"}
+              </Text>
+              <Text className="text-gray-600">
+                {order?.customerAddress || "Địa chỉ"}
+              </Text>
             </Box>
           </Box>
         </Box>
 
-        {/* Action Buttons */}
-        <Box className="space-y-3 w-full max-w-md">
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={() => navigate("/")}
-            className="bg-primary-600 hover:bg-primary-700"
-          >
-            <Home className="mr-2" />
-            Tiếp tục mua sắm
-          </Button>
-
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() => navigate("/orders")}
-            className="border-primary-600 text-primary-600 hover:bg-primary-50"
-          >
-            <List className="mr-2" />
-            Xem đơn hàng của tôi
-          </Button>
-        </Box>
-
-        {/* Contact Info */}
-        <Box className="mt-8 text-center">
-          <Text className="text-sm text-gray-500 mb-2">
-            Cần hỗ trợ? Liên hệ với chúng tôi:
-          </Text>
-          <Text className="text-sm text-primary-600 font-medium">
-            Hotline: 1900-1234
-          </Text>
+        <Box
+          className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-50"
+          style={{
+            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+          }}
+        >
+          <Box className="grid grid-cols-2 gap-3">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => navigate("/orders")}
+              className="border-gray-300 text-gray-900"
+            >
+              <List className="mr-2" />
+              Đơn hàng của tôi
+            </Button>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => navigate("/")}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              <Home className="mr-2" />
+              Tiếp tục mua sắm
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Page>

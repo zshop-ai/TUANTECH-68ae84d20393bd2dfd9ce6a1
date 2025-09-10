@@ -18,6 +18,10 @@ export const API_CONFIG = {
     CART_CLEAR: "/cart/clear",
     CART_CHECKOUT: "/cart/checkout",
     LOCATION_AUTOCOMPLETE: "/location/autocomplete",
+    // Orders
+    CUSTOMER_ORDERS: "/customer/orders",
+    CUSTOMER_ORDER_DETAIL: "/customer/orders/:id",
+    CUSTOMER_MY_ORDERS: "/customer/orders/me",
   },
   // CẬP NHẬT VỚI THÔNG TIN THỰC TẾ CỦA BẠN
   APP_ID: import.meta.env.VITE_APP_ID || "4447770839699639655", // Lấy từ env, fallback về default

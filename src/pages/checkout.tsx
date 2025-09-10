@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "zmp-ui";
 import { CreditCard, Building2, Wallet } from "lucide-react";
 import { cartService } from "../services/cart";
 import { locationService, type LocationPrediction } from "../services/location";
+import { authService } from "../services/auth";
 
 function CheckoutPage() {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ function CheckoutPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const addressWrapRef = useRef<HTMLDivElement>(null!);
   const suppressNextFetchRef = useRef<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ [k: string]: string }>({});
 
   // Keep addressQuery in sync with formData.address
   useEffect(() => {
@@ -115,20 +118,63 @@ function CheckoutPage() {
       ...prev,
       [field]: value,
     }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleSubmit = async () => {
-    // Validate form
-    if (!formData.fullName || !formData.phone || !formData.address) {
+    if (isSubmitting) return;
+
+    // Field validations
+    const phoneRegex = /^(0|\+84)(\d){9}$/; // VN: 10 digits starting 0 or +84
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const newErrors: { [k: string]: string } = {};
+    if (!formData.fullName.trim())
+      newErrors.fullName = "Vui lòng nhập họ và tên";
+    if (!formData.phone.trim()) newErrors.phone = "Vui lòng nhập số điện thoại";
+    if (!formData.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
+    if (!newErrors.phone && !phoneRegex.test(formData.phone.trim())) {
+      newErrors.phone = "Số điện thoại không hợp lệ";
+    }
+    if (formData.email && !emailRegex.test(formData.email.trim())) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstField = Object.keys(newErrors)[0];
+      const idMap: Record<string, string> = {
+        fullName: "input-fullName",
+        phone: "input-phone",
+        email: "input-email",
+        address: "input-address",
+      };
+      const firstId = idMap[firstField];
+      setTimeout(() => document.getElementById(firstId)?.focus(), 0);
       openSnackbar({
         type: "error",
-        text: "Vui lòng điền đầy đủ thông tin bắt buộc",
+        text: newErrors[firstField] || "Vui lòng kiểm tra thông tin",
         duration: 3000,
       });
       return;
     }
 
+    // Check login state (after field validation so user sees errors first)
+    if (!authService.isLoggedIn()) {
+      openSnackbar({
+        type: "warning",
+        text: "Bạn cần đăng nhập để đặt hàng",
+        duration: 3000,
+      });
+      // Delay a bit so the message is visible before navigating
+      setTimeout(() => navigate("/profile"), 600);
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
       const customerInfo = {
         customerName: formData.fullName,
         customerPhone: formData.phone,
@@ -182,6 +228,8 @@ function CheckoutPage() {
         text: e?.message || "Đặt hàng thất bại. Vui lòng thử lại.",
         duration: 3000,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -194,7 +242,7 @@ function CheckoutPage() {
         showBackIcon
       />
 
-      <Box className="p-4 space-y-6">
+      <Box className="p-4 space-y-6 mt-[65px]">
         {/* Order Summary */}
         <Box className="bg-white rounded-lg p-4">
           <Text.Title size="large" className="mb-3">
@@ -271,28 +319,41 @@ function CheckoutPage() {
 
           <Box className="space-y-3">
             <Input
+              id="input-fullName"
               label="Họ và tên *"
               placeholder="Nhập họ và tên"
               value={formData.fullName}
               onChange={(e) => handleInputChange("fullName", e.target.value)}
             />
+            {errors.fullName && (
+              <Text className="text-xs text-red-600">{errors.fullName}</Text>
+            )}
 
             <Input
+              id="input-phone"
               label="Số điện thoại *"
               placeholder="Nhập số điện thoại"
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
             />
+            {errors.phone && (
+              <Text className="text-xs text-red-600">{errors.phone}</Text>
+            )}
 
             <Input
+              id="input-email"
               label="Email"
               placeholder="Nhập email (không bắt buộc)"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
             />
+            {errors.email && (
+              <Text className="text-xs text-red-600">{errors.email}</Text>
+            )}
 
             <Box className="relative" ref={addressWrapRef}>
               <Input
+                id="input-address"
                 label="Địa chỉ *"
                 placeholder="Nhập địa chỉ giao hàng"
                 value={formData.address}
@@ -301,6 +362,9 @@ function CheckoutPage() {
                 }}
                 onChange={(e) => handleInputChange("address", e.target.value)}
               />
+              {errors.address && (
+                <Text className="text-xs text-red-600">{errors.address}</Text>
+              )}
 
               {showSuggestions &&
                 (suggestions.length > 0 || isLoadingSuggestions) && (
@@ -434,8 +498,11 @@ function CheckoutPage() {
           fullWidth
           onClick={handleSubmit}
           className="bg-primary-600 hover:bg-primary-700"
+          disabled={isSubmitting}
         >
-          Đặt hàng - {formatPrice(calculateTotal())}
+          {isSubmitting
+            ? "Đang xử lý..."
+            : `Đặt hàng - ${formatPrice(calculateTotal())}`}
         </Button>
       </Box>
 
