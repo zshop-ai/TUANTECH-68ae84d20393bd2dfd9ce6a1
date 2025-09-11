@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Page, Box, Text, Button, Header } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
-import { MapPin, Edit, Trash2, Plus, Check } from "lucide-react";
+import {
+  MapPin,
+  Edit,
+  Trash2,
+  Plus,
+  Check,
+  Phone,
+  Building,
+} from "lucide-react";
 
 function AddressPage() {
   const navigate = useNavigate();
@@ -147,19 +155,18 @@ function AddressPage() {
                 className="bg-white rounded-lg p-4 shadow-sm"
               >
                 {/* Address Header */}
+                {address.isDefault && (
+                  <Box className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full w-fit">
+                    <Text className="text-xs font-medium">Mặc định</Text>
+                  </Box>
+                )}
                 <Box className="flex items-center justify-between mb-3">
                   <Box className="flex items-center space-x-2">
-                    <MapPin className="w-5 h-5 text-primary-600" />
                     <Text className="font-semibold text-gray-900">
                       {address.name}
                     </Text>
-                    {address.isDefault && (
-                      <Box className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
-                        <Text className="text-xs font-medium">Mặc định</Text>
-                      </Box>
-                    )}
                   </Box>
-                  <Box className="flex items-center space-x-2">
+                  <Box className="flex items-center space-x-1">
                     <Button
                       variant="secondary"
                       size="small"
@@ -181,9 +188,18 @@ function AddressPage() {
 
                 {/* Address Details */}
                 <Box className="space-y-1 mb-3">
-                  <Text className="text-gray-600">📞 {address.phone}</Text>
-                  <Text className="text-gray-900">📍 {address.address}</Text>
-                  <Text className="text-gray-600">🏙️ {address.city}</Text>
+                  <Box className="flex items-center space-x-2">
+                    <Phone className="w-4 h-4 text-gray-500" />
+                    <Text className="text-gray-600">{address.phone}</Text>
+                  </Box>
+                  <Box className="flex items-center space-x-2">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <Text className="text-gray-900">{address.address}</Text>
+                  </Box>
+                  <Box className="flex items-center space-x-2">
+                    <Building className="w-4 h-4 text-gray-500" />
+                    <Text className="text-gray-600">{address.city}</Text>
+                  </Box>
                 </Box>
 
                 {/* Action Buttons */}
@@ -196,8 +212,10 @@ function AddressPage() {
                       onClick={() => handleSetDefault(address.id)}
                       className="border-primary-600 text-primary-600"
                     >
-                      <Check className="w-4 h-4 mr-1" />
-                      Đặt làm mặc định
+                      <div className="flex items-center justify-center">
+                        <Check className="w-4 h-4 mr-1" />
+                        Đặt làm mặc định
+                      </div>
                     </Button>
                   )}
                   {address.isDefault && (
@@ -208,8 +226,10 @@ function AddressPage() {
                       disabled
                       className="border-gray-300 text-gray-400"
                     >
-                      <Check className="w-4 h-4 mr-1" />
-                      Địa chỉ mặc định
+                      <div className="flex items-center justify-center">
+                        <Check className="w-4 h-4 mr-1" />
+                        Địa chỉ mặc định
+                      </div>
                     </Button>
                   )}
                 </Box>
@@ -223,8 +243,10 @@ function AddressPage() {
               onClick={handleAddAddress}
               className="border-primary-600 text-primary-600 border-dashed"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Thêm địa chỉ mới
+              <div className="flex items-center justify-center">
+                <Plus className="w-5 h-5 mr-2" />
+                Thêm địa chỉ mới
+              </div>
             </Button>
           </>
         )}

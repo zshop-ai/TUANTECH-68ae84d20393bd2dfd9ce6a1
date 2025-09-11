@@ -3,6 +3,7 @@ import { Page, Box, Text, Button, Header, useSnackbar, List } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
 import { ChevronLeft, ChevronRight, Trash2, ShoppingCart } from "lucide-react";
 import BottomNavigation from "../core/components/BottomNavigation";
+import CustomCheckbox from "../components/CustomCheckbox";
 import { cartService } from "../services/cart";
 
 type BackendCartItem = {
@@ -38,6 +39,7 @@ function CartPage() {
   const navigate = useNavigate();
   const { openSnackbar } = useSnackbar();
   const [cartItems, setCartItems] = useState<CartUIItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const normalizeItem = (item: BackendCartItem): CartUIItem => {
     const product: any =
@@ -65,8 +67,32 @@ function CartPage() {
       const data: any = await cartService.getCart();
       const items: CartUIItem[] = (data?.items || []).map(normalizeItem);
       setCartItems(items);
+      // Tự động chọn tất cả sản phẩm khi load giỏ hàng
+      setSelectedItems(new Set(items.map((item) => item.id)));
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === cartItems.length) {
+      // Bỏ chọn tất cả
+      setSelectedItems(new Set());
+    } else {
+      // Chọn tất cả
+      setSelectedItems(new Set(cartItems.map((item) => item.id)));
     }
   };
 
@@ -82,18 +108,46 @@ function CartPage() {
   };
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeItem(itemId);
-      return;
+    // Đảm bảo số lượng tối thiểu là 1
+    if (newQuantity < 1) {
+      newQuantity = 1;
     }
+
+    console.log(`Updating quantity for item ${itemId} to ${newQuantity}`);
+
+    // Cập nhật local state trước để có UX tốt hơn
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, quantity: newQuantity } : item
+      )
+    );
+
     try {
-      await cartService.updateQuantity({
+      const result = await cartService.updateQuantity({
         productId: itemId,
         quantity: newQuantity,
       });
-      await fetchCart();
+      console.log("Update quantity result:", result);
+
+      // Không cần refresh cart nếu API thành công
+      // Local state đã được cập nhật và API đã confirm
     } catch (e) {
-      console.error(e);
+      console.error("Error updating quantity:", e);
+
+      // Chỉ revert local state nếu API call thất bại
+      setCartItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? { ...item, quantity: Math.max(1, item.quantity) } // Revert về giá trị hợp lệ
+            : item
+        )
+      );
+
+      openSnackbar({
+        type: "error",
+        text: "Có lỗi xảy ra khi cập nhật số lượng",
+        duration: 2000,
+      });
     }
   };
 
@@ -113,13 +167,16 @@ function CartPage() {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      return total + item.product.price * item.quantity;
+      if (selectedItems.has(item.id)) {
+        return total + item.product.price * item.quantity;
+      }
+      return total;
     }, 0);
   };
 
   const calculateDiscount = () => {
     return cartItems.reduce((total, item) => {
-      if (item.product.originalPrice) {
+      if (selectedItems.has(item.id) && item.product.originalPrice) {
         return (
           total +
           (item.product.originalPrice - item.product.price) * item.quantity
@@ -130,13 +187,28 @@ function CartPage() {
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + 30000; // Shipping fee
+    const subtotal = calculateSubtotal();
+    return subtotal > 0 ? subtotal + 30000 : 0; // Shipping fee chỉ tính khi có sản phẩm được chọn
+  };
+
+  const getSelectedItems = () => {
+    return cartItems.filter((item) => selectedItems.has(item.id));
   };
 
   const handleCheckout = () => {
+    const selectedProducts = getSelectedItems();
+    if (selectedProducts.length === 0) {
+      openSnackbar({
+        type: "error",
+        text: "Vui lòng chọn ít nhất một sản phẩm để thanh toán",
+        duration: 2000,
+      });
+      return;
+    }
+
     navigate("/checkout", {
       state: {
-        products: cartItems,
+        products: selectedProducts,
         mode: "from_cart",
       },
     });
@@ -178,11 +250,38 @@ function CartPage() {
         showBackIcon
       />
 
+      {/* Select All */}
+      <Box className="bg-white border-b border-gray-200 p-4 mt-[100px]">
+        <Box className="flex items-center justify-between">
+          <Box className="flex items-center space-x-3">
+            <CustomCheckbox
+              checked={
+                selectedItems.size === cartItems.length && cartItems.length > 0
+              }
+              onChange={toggleSelectAll}
+              size="medium"
+            />
+            <Text className="font-medium text-gray-900">
+              Chọn tất cả ({selectedItems.size}/{cartItems.length})
+            </Text>
+          </Box>
+        </Box>
+      </Box>
+
       {/* Cart Items */}
-      <Box className="p-4 space-y-4 mt-[100px]">
+      <Box className="p-4 space-y-4">
         {cartItems.map((item) => (
           <Box key={item.id} className="bg-white rounded-lg p-4 shadow-sm">
             <Box className="flex space-x-3">
+              {/* Checkbox */}
+              <Box className="flex items-start pt-2">
+                <CustomCheckbox
+                  checked={selectedItems.has(item.id)}
+                  onChange={() => toggleItemSelection(item.id)}
+                  size="medium"
+                />
+              </Box>
+
               {/* Product Image */}
               <Box className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                 <img
@@ -225,37 +324,36 @@ function CartPage() {
                 </Box>
 
                 {/* Quantity Controls */}
-                <Box className="flex items-center justify-between">
-                  <Box className="flex items-center space-x-3">
-                    <Button
-                      variant="secondary"
-                      size="small"
+                <Box className="flex items-center justify-between mt-3">
+                  <Box className="flex items-center bg-gray-100 rounded-lg">
+                    <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="w-8 h-8 rounded-full"
+                      disabled={item.quantity <= 1}
+                      className={`w-8 h-8 flex items-center justify-center rounded-l-lg transition-colors ${
+                        item.quantity <= 1
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-gray-200"
+                      }`}
                     >
-                      <ChevronLeft className="w-3 h-3" />
-                    </Button>
-                    <Text className="font-semibold min-w-8 text-center">
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    <Text className="font-semibold px-3 py-2 min-w-12 text-center text-gray-900">
                       {item.quantity}
                     </Text>
-                    <Button
-                      variant="secondary"
-                      size="small"
+                    <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="w-8 h-8 rounded-full"
+                      className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded-r-lg transition-colors"
                     >
-                      <ChevronRight className="w-3 h-3" />
-                    </Button>
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
                   </Box>
 
-                  <Button
-                    variant="secondary"
-                    size="small"
+                  <button
                     onClick={() => removeItem(item.id)}
-                    className="text-red-500 hover:bg-red-50"
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </Box>
               </Box>
             </Box>
@@ -265,7 +363,9 @@ function CartPage() {
 
       {/* Order Summary */}
       <Box className="bg-white border-t border-gray-200 p-4 space-y-3">
-        <Text.Title size="large">Tóm tắt đơn hàng</Text.Title>
+        <Text.Title size="large">
+          Tóm tắt đơn hàng ({selectedItems.size} sản phẩm)
+        </Text.Title>
 
         <Box className="space-y-2">
           <Box className="flex justify-between">
@@ -298,9 +398,16 @@ function CartPage() {
           variant="primary"
           fullWidth
           onClick={handleCheckout}
-          className="bg-primary-600 hover:bg-primary-700"
+          disabled={selectedItems.size === 0}
+          className={`${
+            selectedItems.size === 0
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-primary-600 hover:bg-primary-700"
+          }`}
         >
-          Tiến hành thanh toán
+          {selectedItems.size === 0
+            ? "Chọn sản phẩm để thanh toán"
+            : `Tiến hành thanh toán (${selectedItems.size} sản phẩm)`}
         </Button>
       </Box>
 
