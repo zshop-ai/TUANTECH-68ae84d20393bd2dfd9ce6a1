@@ -11,6 +11,7 @@ import { createRoot } from "react-dom/client";
 
 // Mount the app
 import CoreApp from "@/core/layout/CoreApp";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Expose app configuration
 import appConfig from "../app-config.json";
@@ -20,4 +21,10 @@ if (!window.APP_CONFIG) {
 }
 
 const root = createRoot(document.getElementById("app")!);
-root.render(React.createElement(CoreApp, { defaultTemplateId: 'cosmetic' }));
+root.render(
+  React.createElement(
+    AuthProvider,
+    null,
+    React.createElement(CoreApp, { defaultTemplateId: 'cosmetic' })
+  )
+);

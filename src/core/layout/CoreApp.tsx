@@ -9,6 +9,7 @@ import {
 import { AppProps } from "zmp-ui/app";
 import { CoreThemeProvider } from '../theme/context';
 import { ToastContainer } from '../../components/Toast';
+import ReferralHandler from '../../components/ReferralHandler';
 
 // Import pages
 import HomePage from '../../pages/index';
@@ -36,6 +37,8 @@ const CoreApp: React.FC<CoreAppProps> = ({ defaultTemplateId = 'cosmetic' }) => 
     <CoreThemeProvider defaultTemplateId={defaultTemplateId}>
       <App theme={getSystemInfo().zaloTheme as AppProps["theme"]}>
         <ZMPRouter>
+          {/* Xử lý referral code từ URL */}
+          <ReferralHandler />
           <AnimationRoutes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />

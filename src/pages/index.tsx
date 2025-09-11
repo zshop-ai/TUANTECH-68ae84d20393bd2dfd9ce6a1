@@ -3,7 +3,6 @@ import { useSnackbar } from 'zmp-ui';
 import { useNavigate } from 'zmp-ui';
 import CoreLayout from '../core/components/CoreLayout';
 import { useProducts } from '../core/hooks/useProducts';
-import TemplateSelector from '../core/components/TemplateSelector';
 
 function HomePage() {
   const navigate = useNavigate();
@@ -38,10 +37,7 @@ function HomePage() {
       onCategoryClick={handleCategoryClick}
       loading={loading}
       error={error}
-    >
-      {/* Template Selector for development */}
-      <TemplateSelector />
-    </CoreLayout>
+    />
   );
 }
 

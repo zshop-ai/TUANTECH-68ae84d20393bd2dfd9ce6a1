@@ -16,36 +16,37 @@ import {
   ChevronRight,
   User,
   Edit,
-  LogOut
+  LogOut,
+  Share2,
+  Heart,
+  Users
 } from 'lucide-react';
 import BottomNavigation from '../core/components/BottomNavigation';
 import ZaloLogin from '../components/ZaloLogin';
 import { authService, User as UserType } from '../services/auth';
 import { Toast, ToastContainer } from '../components/Toast';
+import { useZaloActions } from '../hooks/useZaloActions';
+import { ZALO_CONFIG } from '../config/zalo';
+import { getShareDataForPage } from '../utils/referralUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 function ProfilePage() {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const { userInfo, isLoggedIn, isLoading: authLoading, login, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const { handleFollowOA, handleShare, isLoading: isZaloLoading } = useZaloActions();
+  
+  // Sử dụng userInfo từ AuthContext thay vì state local
+  const currentUser = userInfo;
 
-  // Kiểm tra trạng thái đăng nhập khi component mount
+  // Sử dụng loading state từ AuthContext
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = () => {
-    const loggedIn = authService.isLoggedIn();
-    const user = authService.getCurrentUser();
-    
-    setIsLoggedIn(loggedIn);
-    setCurrentUser(user);
-    setIsLoading(false);
-  };
+    setIsLoading(authLoading);
+  }, [authLoading]);
 
   const handleLoginSuccess = (user: UserType) => {
-    setIsLoggedIn(true);
-    setCurrentUser(user);
+    // Cập nhật AuthContext với user mới
+    login(user);
     Toast.show({
       type: 'success',
       text: 'Đăng nhập thành công!',
@@ -60,13 +61,44 @@ function ProfilePage() {
   };
 
   const handleLogout = () => {
-    authService.logout();
-    setIsLoggedIn(false);
-    setCurrentUser(null);
+    logout(); // Sử dụng logout từ AuthContext
     Toast.show({
       type: 'success',
       text: 'Đã đăng xuất thành công!',
     });
+  };
+
+  const handleShareApp = async () => {
+    const shareData = getShareDataForPage('profile');
+    const result = await handleShare(shareData);
+    
+    if (result.success) {
+      Toast.show({
+        type: 'success',
+        text: 'Chia sẻ thành công!',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text: result.message || 'Có lỗi xảy ra khi chia sẻ',
+      });
+    }
+  };
+
+  const handleFollowOAClick = async () => {
+    const result = await handleFollowOA(ZALO_CONFIG.OA_ID);
+    
+    if (result.success) {
+      Toast.show({
+        type: 'success',
+        text: result.message,
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text: result.message,
+      });
+    }
   };
 
   const menuItems = [
@@ -105,6 +137,25 @@ function ProfilePage() {
       title: 'Về chúng tôi',
       icon: Info,
       action: () => navigate('/about')
+    }
+  ];
+
+  const actionButtons = [
+    {
+      id: 'share',
+      title: 'Chia sẻ ứng dụng',
+      icon: Share2,
+      action: handleShareApp,
+      variant: 'primary' as const,
+      loading: isZaloLoading
+    },
+    {
+      id: 'follow',
+      title: 'Quan tâm OA',
+      icon: Heart,
+      action: handleFollowOAClick,
+      variant: 'secondary' as const,
+      loading: isZaloLoading
     }
   ];
 
@@ -231,6 +282,35 @@ function ProfilePage() {
         </Box>
       )}
 
+      {/* Action Buttons */}
+      <Box className="bg-white p-4 mb-4">
+        <Text className="text-lg font-semibold mb-4 text-gray-800">
+          Hành động
+        </Text>
+        <Box className="grid grid-cols-2 gap-3">
+          {actionButtons.map((button) => (
+            <Button
+              key={button.id}
+              variant={button.variant}
+              onClick={button.action}
+              disabled={button.loading}
+              className={`flex items-center justify-center space-x-2 py-3 ${
+                button.variant === 'primary'
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+              }`}
+            >
+              {button.loading ? (
+                <Box className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <button.icon className="w-4 h-4" />
+              )}
+              <Text className="text-sm font-medium">{button.title}</Text>
+            </Button>
+          ))}
+        </Box>
+      </Box>
+
       {/* Menu Items */}
       {isLoggedIn && (
         <Box className="bg-white">
@@ -265,7 +345,7 @@ function ProfilePage() {
       </Box>
 
       {/* Bottom Navigation */}
-      <BottomNavigation currentPage="profile" />
+      <BottomNavigation />
       
       {/* Toast Container */}
       <ToastContainer />

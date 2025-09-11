@@ -24,6 +24,7 @@ interface LoginResponse {
     isFollower: boolean;
     isSensitive: boolean;
     shopId: string;
+    referalCode?: string; // Sửa theo BE (thiếu chữ "r")
   };
 }
 
@@ -38,6 +39,7 @@ interface User {
   shopId: string;
   email?: string;
   joinDate?: string;
+  referalCode?: string; // Sửa theo BE (thiếu chữ "r")
   stats?: {
     orders: number;
     favorites: number;
@@ -96,16 +98,22 @@ class AuthService {
     // Đăng nhập với Zalo token
   async loginWithZalo(zaloAccessToken: string): Promise<User> {
     try {
+      // Lấy referral code từ localStorage nếu có
+      const referralCode = localStorage.getItem('referral_code');
+      
+      const requestBody = {
+        appId: this.APP_ID,
+        accessToken: zaloAccessToken,
+        shopId: this.SHOP_ID,
+        ...(referralCode && { refCode: referralCode }) // Gửi refCode nếu có
+      };
+      
       const response = await fetch(`${this.API_BASE_URL}${API_CONFIG.ENDPOINTS.USER_LOGIN}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          appId: this.APP_ID,
-          accessToken: zaloAccessToken,
-          shopId: this.SHOP_ID,
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
@@ -129,6 +137,11 @@ class AuthService {
           spent: '0đ'
         }
       };
+      
+      // Xóa referral code sau khi đăng nhập thành công
+      if (referralCode) {
+        localStorage.removeItem('referral_code');
+      }
       
       this.setUser(user);
       return user;
