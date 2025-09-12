@@ -216,12 +216,12 @@ function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <Page className="bg-gray-50">
+      <Page className="bg-gray-50 page">
         {/* Header */}
         <Header title="Giỏ hàng" className="bg-primary-600" showBackIcon />
 
         {/* Empty Cart */}
-        <Box className="flex flex-col items-center justify-center py-20 px-4">
+        <Box className="flex flex-col items-center justify-center py-20 px-4 mt-16">
           <ShoppingCart className="w-20 h-20 text-gray-300 mb-4" />
           <Text.Title size="large" className="mb-2 text-gray-600">
             Giỏ hàng trống
@@ -237,12 +237,15 @@ function CartPage() {
             Mua sắm ngay
           </Button>
         </Box>
+
+        {/* Bottom Navigation */}
+        <BottomNavigation />
       </Page>
     );
   }
 
   return (
-    <Page className="bg-gray-50">
+    <Page className="bg-gray-50 page">
       {/* Header */}
       <Header
         title={`Giỏ hàng (${cartItems.length})`}
@@ -251,7 +254,7 @@ function CartPage() {
       />
 
       {/* Select All */}
-      <Box className="bg-white border-b border-gray-200 p-4 mt-[100px]">
+      <Box className="bg-white border-b border-gray-200 p-4 mt-16">
         <Box className="flex items-center justify-between">
           <Box className="flex items-center space-x-3">
             <CustomCheckbox
