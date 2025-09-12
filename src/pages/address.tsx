@@ -12,6 +12,8 @@ import {
 import { useAddresses } from "../hooks/useAddresses";
 import { Address, CreateAddressRequest } from "../services/address";
 import { API_CONFIG } from "../config/api";
+import { AddressAutocomplete } from "../components/AddressAutocomplete";
+import { LocationPrediction } from "../services/location";
 
 function AddressPage() {
   const {
@@ -103,6 +105,43 @@ function AddressPage() {
     }
   };
 
+  const handleAddressSelect = (prediction: LocationPrediction) => {
+    const description = String(prediction.description);
+
+    setFormData((prev) => ({
+      ...prev,
+      address: description,
+    }));
+
+    const parts = description.split(", ");
+    let city = "";
+
+    if (parts.length > 1) {
+      city = parts[parts.length - 1].trim();
+
+      if (parts.length > 2) {
+        const lastPart = parts[parts.length - 1].toLowerCase();
+        if (lastPart.includes("vietnam") || lastPart.includes("việt nam")) {
+          city = parts[parts.length - 2].trim();
+        }
+      }
+    } else {
+      city = description;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      city: String(city),
+    }));
+
+    if (formErrors.address) {
+      setFormErrors((prev) => ({ ...prev, address: "" }));
+    }
+    if (formErrors.city) {
+      setFormErrors((prev) => ({ ...prev, city: "" }));
+    }
+  };
+
   const handleAddAddress = () => {
     resetForm();
     setShowAddModal(true);
@@ -125,7 +164,22 @@ function AddressPage() {
     if (!validateForm()) return;
 
     try {
-      await createAddress(formData);
+      const addressData = {
+        name: String(formData.name),
+        phone: String(formData.phone),
+        address: String(formData.address),
+        city: String(formData.city),
+        isDefault: false,
+        shopId: String(formData.shopId),
+      };
+
+      console.log("Sending address data:", addressData);
+      const newAddress = await createAddress(addressData);
+
+      if (formData.isDefault) {
+        await setDefaultAddress(newAddress.id);
+      }
+
       setShowAddModal(false);
       resetForm();
     } catch (error) {
@@ -137,7 +191,15 @@ function AddressPage() {
     if (!validateForm() || !editingAddress) return;
 
     try {
-      await updateAddress(editingAddress.id, formData);
+      const addressData = {
+        name: String(formData.name),
+        phone: String(formData.phone),
+        address: String(formData.address),
+        city: String(formData.city),
+        isDefault: Boolean(formData.isDefault),
+      };
+      await updateAddress(editingAddress.id, addressData);
+
       setShowEditModal(false);
       setEditingAddress(null);
       resetForm();
@@ -353,17 +415,14 @@ function AddressPage() {
           </Box>
 
           <Box>
-            <Input
+            <AddressAutocomplete
               label="Địa chỉ *"
               placeholder="Nhập địa chỉ chi tiết"
               value={formData.address}
-              onChange={(e) => handleInputChange("address", e.target.value)}
+              onChange={(value) => handleInputChange("address", value)}
+              onSelect={handleAddressSelect}
+              error={formErrors.address}
             />
-            {formErrors.address && (
-              <Text className="text-xs text-red-600 mt-1">
-                {formErrors.address}
-              </Text>
-            )}
           </Box>
 
           <Box>
@@ -444,17 +503,14 @@ function AddressPage() {
           </Box>
 
           <Box>
-            <Input
+            <AddressAutocomplete
               label="Địa chỉ *"
               placeholder="Nhập địa chỉ chi tiết"
               value={formData.address}
-              onChange={(e) => handleInputChange("address", e.target.value)}
+              onChange={(value) => handleInputChange("address", value)}
+              onSelect={handleAddressSelect}
+              error={formErrors.address}
             />
-            {formErrors.address && (
-              <Text className="text-xs text-red-600 mt-1">
-                {formErrors.address}
-              </Text>
-            )}
           </Box>
 
           <Box>

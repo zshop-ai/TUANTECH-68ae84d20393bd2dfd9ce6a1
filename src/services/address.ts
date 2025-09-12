@@ -105,7 +105,7 @@ class AddressService {
 
   /**
    * Update an existing address
-   * PUT /address/address_id
+   * PATCH /address/address_id
    */
   async updateAddress(
     addressId: string,
@@ -114,7 +114,7 @@ class AddressService {
     const url = this.buildUrl(`${API_CONFIG.ENDPOINTS.ADDRESS}/:addressId`, {
       addressId,
     });
-    const result = await apiPut<any>(url, addressData);
+    const result = await apiPatch<any>(url, addressData);
     return {
       ...result,
       id: result._id || result.id,
