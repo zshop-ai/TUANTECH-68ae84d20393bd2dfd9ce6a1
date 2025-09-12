@@ -311,10 +311,12 @@ function AddressPage() {
         title="Thêm địa chỉ mới"
         actions={[
           {
+            key: "cancel",
             text: "Hủy",
             onClick: closeModals,
           },
           {
+            key: "add",
             text: "Thêm",
             onClick: handleSubmitAdd,
             disabled: loading,
@@ -400,10 +402,12 @@ function AddressPage() {
         title="Chỉnh sửa địa chỉ"
         actions={[
           {
+            key: "cancel",
             text: "Hủy",
             onClick: closeModals,
           },
           {
+            key: "update",
             text: "Cập nhật",
             onClick: handleSubmitEdit,
             disabled: loading,

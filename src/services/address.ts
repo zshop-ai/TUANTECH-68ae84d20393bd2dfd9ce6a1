@@ -1,5 +1,5 @@
 import { API_CONFIG } from "../config/api";
-import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
+import { apiGet, apiPost, apiPut, apiDelete, apiPatch } from "../utils/api";
 
 export interface Address {
   id: string;
@@ -60,10 +60,15 @@ class AddressService {
    */
   async getAddresses(shopId: string): Promise<Address[]> {
     const url = this.buildQueryUrl(API_CONFIG.ENDPOINTS.ADDRESS, { shopId });
-    console.log("Address API URL:", url);
-    const result = await apiGet<Address[]>(url);
-    console.log("Address API Response:", result);
-    return result;
+    const result = await apiGet<any[]>(url);
+
+    // Transform _id to id for frontend compatibility
+    const transformedAddresses = result.map((address: any) => ({
+      ...address,
+      id: address._id || address.id,
+    }));
+
+    return transformedAddresses;
   }
 
   /**
@@ -72,7 +77,11 @@ class AddressService {
    */
   async createAddress(addressData: CreateAddressRequest): Promise<Address> {
     const url = this.buildUrl(API_CONFIG.ENDPOINTS.ADDRESS);
-    return apiPost<Address>(url, addressData);
+    const result = await apiPost<any>(url, addressData);
+    return {
+      ...result,
+      id: result._id || result.id,
+    };
   }
 
   /**
@@ -80,10 +89,18 @@ class AddressService {
    * PATCH /address/address_id/set-default
    */
   async setDefaultAddress(addressId: string): Promise<Address> {
+    if (!addressId) {
+      throw new Error("Address ID is required");
+    }
+
     const url = this.buildUrl(API_CONFIG.ENDPOINTS.ADDRESS_SET_DEFAULT, {
       addressId,
     });
-    return apiPut<Address>(url);
+    const result = await apiPatch<any>(url);
+    return {
+      ...result,
+      id: result._id || result.id,
+    };
   }
 
   /**
@@ -97,7 +114,11 @@ class AddressService {
     const url = this.buildUrl(`${API_CONFIG.ENDPOINTS.ADDRESS}/:addressId`, {
       addressId,
     });
-    return apiPut<Address>(url, addressData);
+    const result = await apiPut<any>(url, addressData);
+    return {
+      ...result,
+      id: result._id || result.id,
+    };
   }
 
   /**

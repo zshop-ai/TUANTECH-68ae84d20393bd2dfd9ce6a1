@@ -143,3 +143,13 @@ export async function apiPut<T = any>(url: string, data?: any): Promise<T> {
 export async function apiDelete<T = any>(url: string): Promise<T> {
   return apiCall<T>(url, { method: "DELETE" });
 }
+
+/**
+ * Utility function để gọi API PATCH
+ */
+export async function apiPatch<T = any>(url: string, data?: any): Promise<T> {
+  return apiCall<T>(url, {
+    method: "PATCH",
+    body: data ? JSON.stringify(data) : undefined,
+  });
+}
