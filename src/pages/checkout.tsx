@@ -1,10 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Page, Box, Text, Button, Header, useSnackbar, Input } from "zmp-ui";
+import {
+  Page,
+  Box,
+  Text,
+  Button,
+  Header,
+  useSnackbar,
+  Input,
+  Spinner,
+  Modal,
+} from "zmp-ui";
 import { useNavigate, useLocation } from "zmp-ui";
-import { CreditCard, Building2, Wallet } from "lucide-react";
+import {
+  CreditCard,
+  Building2,
+  Wallet,
+  MapPin,
+  Phone,
+  Building,
+  Plus,
+  Check,
+  ChevronDown,
+} from "lucide-react";
 import { cartService } from "../services/cart";
-import { locationService, type LocationPrediction } from "../services/location";
 import { authService } from "../services/auth";
+import { useAddresses } from "../hooks/useAddresses";
+import { Address } from "../services/address";
 
 function CheckoutPage() {
   const navigate = useNavigate();
@@ -13,12 +34,22 @@ function CheckoutPage() {
   const products = location.state?.products || [];
   const mode = location.state?.mode || "from_cart"; // 'buy_now' or 'from_cart'
 
+  // Address management
+  const {
+    addresses,
+    loading: addressesLoading,
+    error: addressesError,
+    refreshAddresses,
+  } = useAddresses();
+
   // Redirect if no products
   if (products.length === 0) {
     navigate("/");
     return null;
   }
 
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -32,67 +63,31 @@ function CheckoutPage() {
 
   // Location autocomplete states
   const [addressQuery, setAddressQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<LocationPrediction[]>([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const addressWrapRef = useRef<HTMLDivElement>(null!);
   const suppressNextFetchRef = useRef<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
 
+  // Auto-select default address when addresses are loaded
+  useEffect(() => {
+    if (addresses.length > 0 && !selectedAddress) {
+      const defaultAddress =
+        addresses.find((addr) => addr.isDefault) || addresses[0];
+      setSelectedAddress(defaultAddress);
+      setFormData((prev) => ({
+        ...prev,
+        fullName: defaultAddress.name,
+        phone: defaultAddress.phone,
+        address: defaultAddress.address,
+        city: defaultAddress.city,
+      }));
+    }
+  }, [addresses, selectedAddress]);
+
   // Keep addressQuery in sync with formData.address
   useEffect(() => {
     setAddressQuery(formData.address || "");
   }, [formData.address]);
-
-  // Debounced fetch for address suggestions
-  useEffect(() => {
-    const controller = new AbortController();
-
-    if (suppressNextFetchRef.current) {
-      suppressNextFetchRef.current = false;
-      return;
-    }
-
-    if (!addressQuery || addressQuery.trim().length < 3) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        setIsLoadingSuggestions(true);
-        const res = await locationService.autocomplete(addressQuery.trim());
-        setSuggestions(res.predictions || []);
-        setShowSuggestions(true);
-      } catch (_) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      } finally {
-        setIsLoadingSuggestions(false);
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [addressQuery]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (
-        addressWrapRef.current &&
-        !addressWrapRef.current.contains(e.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -123,6 +118,24 @@ function CheckoutPage() {
     }
   };
 
+  const handleAddressSelect = (address: Address) => {
+    setSelectedAddress(address);
+    setFormData((prev) => ({
+      ...prev,
+      fullName: address.name,
+      phone: address.phone,
+      address: address.address,
+      city: address.city,
+    }));
+    // Clear any address-related errors
+    setErrors((prev) => ({
+      ...prev,
+      fullName: "",
+      phone: "",
+      address: "",
+    }));
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
@@ -131,13 +144,22 @@ function CheckoutPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const newErrors: { [k: string]: string } = {};
-    if (!formData.fullName.trim())
-      newErrors.fullName = "Vui lòng nhập họ và tên";
-    if (!formData.phone.trim()) newErrors.phone = "Vui lòng nhập số điện thoại";
-    if (!formData.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
-    if (!newErrors.phone && !phoneRegex.test(formData.phone.trim())) {
-      newErrors.phone = "Số điện thoại không hợp lệ";
+
+    // Check if address is selected
+    if (!selectedAddress) {
+      newErrors.address = "Vui lòng chọn địa chỉ giao hàng";
+    } else {
+      // Validate selected address data
+      if (!formData.fullName.trim())
+        newErrors.fullName = "Vui lòng nhập họ và tên";
+      if (!formData.phone.trim())
+        newErrors.phone = "Vui lòng nhập số điện thoại";
+      if (!formData.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
+      if (!newErrors.phone && !phoneRegex.test(formData.phone.trim())) {
+        newErrors.phone = "Số điện thoại không hợp lệ";
+      }
     }
+
     if (formData.email && !emailRegex.test(formData.email.trim())) {
       newErrors.email = "Email không hợp lệ";
     }
@@ -311,35 +333,120 @@ function CheckoutPage() {
           </Box>
         </Box>
 
-        {/* Shipping Information */}
+        {/* Address Selection */}
         <Box className="bg-white rounded-lg p-4">
           <Text.Title size="large" className="mb-3">
-            Thông tin giao hàng
+            Địa chỉ giao hàng
           </Text.Title>
 
-          <Box className="space-y-3">
-            <Input
-              id="input-fullName"
-              label="Họ và tên *"
-              placeholder="Nhập họ và tên"
-              value={formData.fullName}
-              onChange={(e) => handleInputChange("fullName", e.target.value)}
-            />
-            {errors.fullName && (
-              <Text className="text-xs text-red-600">{errors.fullName}</Text>
-            )}
+          {addressesLoading && (
+            <Box className="flex justify-center py-8">
+              <Spinner />
+            </Box>
+          )}
 
-            <Input
-              id="input-phone"
-              label="Số điện thoại *"
-              placeholder="Nhập số điện thoại"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-            />
-            {errors.phone && (
-              <Text className="text-xs text-red-600">{errors.phone}</Text>
-            )}
+          {addressesError && (
+            <Box className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <Text className="text-red-600 text-center">{addressesError}</Text>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={refreshAddresses}
+                className="mt-2 w-full"
+              >
+                Thử lại
+              </Button>
+            </Box>
+          )}
 
+          {!addressesLoading && !addressesError && addresses.length === 0 ? (
+            <Box className="text-center py-8">
+              <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <Text className="text-gray-500 mb-4">
+                Chưa có địa chỉ giao hàng
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={() => navigate("/address")}
+                className="border-primary-600 text-primary-600"
+              >
+                <div className="flex items-center justify-center">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Thêm địa chỉ
+                </div>
+              </Button>
+            </Box>
+          ) : !addressesLoading &&
+            !addressesError &&
+            addresses.length > 0 &&
+            selectedAddress ? (
+            <Box className="space-y-3">
+              {/* Display selected address */}
+              <Box className="p-3 border border-primary-600 bg-primary-50 rounded-lg">
+                <Box className="flex items-start justify-between">
+                  <Box className="flex-1">
+                    <Box className="flex items-center space-x-2 mb-2">
+                      <Text className="font-semibold text-gray-900">
+                        {selectedAddress.name}
+                      </Text>
+                      {selectedAddress.isDefault && (
+                        <Box className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
+                          <Text className="text-xs font-medium">Mặc định</Text>
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Box className="space-y-1">
+                      <Box className="flex items-center space-x-2">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <Text className="text-gray-600">
+                          {selectedAddress.phone}
+                        </Text>
+                      </Box>
+                      <Box className="flex items-center space-x-2">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <Text className="text-gray-900 line-clamp-2 w-full  ">
+                          {selectedAddress.address}
+                        </Text>
+                      </Box>
+                      <Box className="flex items-center space-x-2">
+                        <Building className="w-4 h-4 text-gray-500" />
+                        <Text className="text-gray-600">
+                          {selectedAddress.city}
+                        </Text>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Select different address button */}
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={() => setShowAddressModal(true)}
+                    className="border-primary-600 text-primary-600"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </Box>
+              </Box>
+
+              {/* Add new address button */}
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => navigate("/address")}
+                className="border-primary-600 text-primary-600 border-dashed"
+              >
+                <div className="flex items-center justify-center">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Thêm địa chỉ mới
+                </div>
+              </Button>
+            </Box>
+          ) : null}
+
+          {/* Additional Information */}
+          <Box className="mt-4 space-y-3">
             <Input
               id="input-email"
               label="Email"
@@ -351,68 +458,6 @@ function CheckoutPage() {
               <Text className="text-xs text-red-600">{errors.email}</Text>
             )}
 
-            <Box className="relative" ref={addressWrapRef}>
-              <Input
-                id="input-address"
-                label="Địa chỉ *"
-                placeholder="Nhập địa chỉ giao hàng"
-                value={formData.address}
-                onFocus={() => {
-                  if (suggestions.length > 0) setShowSuggestions(true);
-                }}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-              />
-              {errors.address && (
-                <Text className="text-xs text-red-600">{errors.address}</Text>
-              )}
-
-              {showSuggestions &&
-                (suggestions.length > 0 || isLoadingSuggestions) && (
-                  <Box className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-md max-h-64 overflow-auto">
-                    {isLoadingSuggestions && (
-                      <Box className="p-3 text-sm text-gray-500">
-                        Đang tải gợi ý...
-                      </Box>
-                    )}
-
-                    {!isLoadingSuggestions &&
-                      suggestions.map((s) => {
-                        const main =
-                          s.structured_formatting?.main_text || s.description;
-                        const secondary =
-                          s.structured_formatting?.secondary_text || "";
-                        return (
-                          <Box
-                            key={s.place_id}
-                            className="px-3 py-2 cursor-pointer hover:bg-gray-50"
-                            // Prevent input from losing focus while selecting
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              suppressNextFetchRef.current = true;
-                              handleInputChange("address", s.description);
-                              setShowSuggestions(false);
-                              setSuggestions([]);
-                              const inputEl =
-                                addressWrapRef.current?.querySelector(
-                                  "input"
-                                ) as HTMLInputElement | null;
-                              inputEl?.blur();
-                            }}
-                          >
-                            <Text className="text-gray-900 text-sm">
-                              {main}
-                            </Text>
-                            {secondary && (
-                              <Text className="text-gray-500 text-xs">
-                                {secondary}
-                              </Text>
-                            )}
-                          </Box>
-                        );
-                      })}
-                  </Box>
-                )}
-            </Box>
             <Input
               label="Ghi chú"
               placeholder="Ghi chú cho đơn hàng (không bắt buộc)"
@@ -420,6 +465,10 @@ function CheckoutPage() {
               onChange={(e) => handleInputChange("note", e.target.value)}
             />
           </Box>
+
+          {errors.address && (
+            <Text className="text-xs text-red-600 mt-2">{errors.address}</Text>
+          )}
         </Box>
 
         {/* Payment Method */}
@@ -508,6 +557,87 @@ function CheckoutPage() {
 
       {/* Bottom Spacing */}
       <Box className="h-24" />
+
+      {/* Address Selection Modal */}
+      <Modal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        title="Chọn địa chỉ giao hàng"
+        actions={[
+          {
+            key: "cancel",
+            text: "Hủy",
+            onClick: () => setShowAddressModal(false),
+          },
+        ]}
+      >
+        <Box className="space-y-3">
+          {addresses.map((address) => (
+            <Box
+              key={address.id}
+              className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                selectedAddress?.id === address.id
+                  ? "border-primary-600 bg-primary-50"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+              onClick={() => {
+                handleAddressSelect(address);
+                setShowAddressModal(false);
+              }}
+            >
+              <Box className="flex items-start justify-between">
+                <Box className="flex-1">
+                  <Box className="flex items-center space-x-2 mb-2">
+                    <Text className="font-semibold text-gray-900">
+                      {address.name}
+                    </Text>
+                    {address.isDefault && (
+                      <Box className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
+                        <Text className="text-xs font-medium">Mặc định</Text>
+                      </Box>
+                    )}
+                    {selectedAddress?.id === address.id && (
+                      <Check className="w-4 h-4 text-primary-600" />
+                    )}
+                  </Box>
+
+                  <Box className="space-y-1">
+                    <Box className="flex items-center space-x-2">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <Text className="text-gray-600">{address.phone}</Text>
+                    </Box>
+                    <Box className="flex items-center space-x-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <Text className="text-gray-900 line-clamp-2 w-full">
+                        {address.address}
+                      </Text>
+                    </Box>
+                    <Box className="flex items-center space-x-2">
+                      <Building className="w-4 h-4 text-gray-500" />
+                      <Text className="text-gray-600">{address.city}</Text>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          ))}
+
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => {
+              setShowAddressModal(false);
+              navigate("/address");
+            }}
+            className="border-primary-600 text-primary-600 border-dashed"
+          >
+            <div className="flex items-center justify-center">
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm địa chỉ mới
+            </div>
+          </Button>
+        </Box>
+      </Modal>
     </Page>
   );
 }

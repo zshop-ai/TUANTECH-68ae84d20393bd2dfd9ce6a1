@@ -1,5 +1,5 @@
 import { API_CONFIG } from "../config/api";
-import { apiDelete, apiGet, apiPost } from "../utils/api";
+import { apiDelete, apiGet, apiPost, apiPatch } from "../utils/api";
 import { authService } from "./auth";
 
 const GUEST_USER_ID = "68b00ed59cf44607992bf4c7";
@@ -75,7 +75,7 @@ export const cartService = {
       payload.productId
     )}`;
     const url = withUserId(base);
-    return apiPost(url, { quantity: payload.quantity, _method: "PATCH" });
+    return apiPatch(url, { quantity: payload.quantity });
   },
 
   async removeItem(productId: string) {

@@ -103,11 +103,10 @@ function OrdersPage() {
                 <Box className="flex items-center space-x-2">
                   <Package className="w-5 h-5 text-primary-600" />
                   <Text className="font-semibold text-gray-900">
-                    #{order.id}
+                    #{order.id.slice(0, 4)}...{order.id.slice(-4)}
                   </Text>
                 </Box>
                 <Box className="flex items-center space-x-2">
-                  {getStatusIcon(order.status)}
                   <Text
                     className={`text-sm font-medium ${
                       order.status === "delivered"
@@ -272,7 +271,9 @@ function OrdersPage() {
                   {selectedOrder.customerAddress && (
                     <Box className="flex items-center gap-2 text-gray-700">
                       <MapPin className="w-4 h-4 text-gray-500" />
-                      <Text>{selectedOrder.customerAddress}</Text>
+                      <Text className="line-clamp-2 w-full">
+                        {selectedOrder.customerAddress}
+                      </Text>
                     </Box>
                   )}
                 </Box>

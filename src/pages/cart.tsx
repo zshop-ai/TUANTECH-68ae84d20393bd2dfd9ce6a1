@@ -40,6 +40,7 @@ function CartPage() {
   const { openSnackbar } = useSnackbar();
   const [cartItems, setCartItems] = useState<CartUIItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
   const normalizeItem = (item: BackendCartItem): CartUIItem => {
     const product: any =
@@ -113,6 +114,8 @@ function CartPage() {
       newQuantity = 1;
     }
 
+    setUpdatingItems((prev) => new Set(prev).add(itemId));
+
     console.log(`Updating quantity for item ${itemId} to ${newQuantity}`);
 
     // Cập nhật local state trước để có UX tốt hơn
@@ -147,6 +150,12 @@ function CartPage() {
         type: "error",
         text: "Có lỗi xảy ra khi cập nhật số lượng",
         duration: 2000,
+      });
+    } finally {
+      setUpdatingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
       });
     }
   };
@@ -331,9 +340,11 @@ function CartPage() {
                   <Box className="flex items-center bg-gray-100 rounded-lg">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
+                      disabled={
+                        item.quantity <= 1 || updatingItems.has(item.id)
+                      }
                       className={`w-8 h-8 flex items-center justify-center rounded-l-lg transition-colors ${
-                        item.quantity <= 1
+                        item.quantity <= 1 || updatingItems.has(item.id)
                           ? "opacity-50 cursor-not-allowed"
                           : "hover:bg-gray-200"
                       }`}
@@ -341,11 +352,16 @@ function CartPage() {
                       <ChevronLeft className="w-4 h-4 text-gray-600" />
                     </button>
                     <Text className="font-semibold px-3 py-2 min-w-12 text-center text-gray-900">
-                      {item.quantity}
+                      {updatingItems.has(item.id) ? "..." : item.quantity}
                     </Text>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded-r-lg transition-colors"
+                      disabled={updatingItems.has(item.id)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-r-lg transition-colors ${
+                        updatingItems.has(item.id)
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-gray-200"
+                      }`}
                     >
                       <ChevronRight className="w-4 h-4 text-gray-600" />
                     </button>
