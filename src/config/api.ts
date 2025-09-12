@@ -18,6 +18,8 @@ export const API_CONFIG = {
     CART_CLEAR: "/cart/clear",
     CART_CHECKOUT: "/cart/checkout",
     LOCATION_AUTOCOMPLETE: "/location/autocomplete",
+    ADDRESS: "/address",
+    ADDRESS_SET_DEFAULT: "/address/:addressId/set-default",
     // Orders
     CUSTOMER_ORDERS: "/customer/orders",
     CUSTOMER_ORDER_DETAIL: "/customer/orders/:id",

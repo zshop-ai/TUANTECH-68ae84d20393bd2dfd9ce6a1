@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Page, Box, Text, Button, Header } from "zmp-ui";
-import { useNavigate } from "zmp-ui";
+import { useState } from "react";
+import { Page, Box, Text, Button, Header, Spinner, Input, Modal } from "zmp-ui";
 import {
   MapPin,
   Edit,
@@ -10,115 +9,148 @@ import {
   Phone,
   Building,
 } from "lucide-react";
+import { useAddresses } from "../hooks/useAddresses";
+import { Address, CreateAddressRequest } from "../services/address";
+import { API_CONFIG } from "../config/api";
 
 function AddressPage() {
-  const navigate = useNavigate();
-  // Mock addresses data for different users
-  const mockAddressesData = [
-    // User 1: Nguyễn Thị Anh
-    [
-      {
-        id: "1",
-        name: "Nguyễn Thị Anh",
-        phone: "0123456789",
-        address: "123 Đường ABC, Phường XYZ, Quận 1",
-        city: "TP. Hồ Chí Minh",
-        isDefault: true,
-      },
-      {
-        id: "2",
-        name: "Nguyễn Thị Anh",
-        phone: "0123456789",
-        address: "456 Đường DEF, Phường GHI, Quận 3",
-        city: "TP. Hồ Chí Minh",
-        isDefault: false,
-      },
-    ],
-    // User 2: Trần Văn Minh
-    [
-      {
-        id: "3",
-        name: "Trần Văn Minh",
-        phone: "0987654321",
-        address: "789 Đường HIJ, Phường KLM, Quận 7",
-        city: "TP. Hồ Chí Minh",
-        isDefault: true,
-      },
-    ],
-    // User 3: Lê Thị Hương
-    [
-      {
-        id: "4",
-        name: "Lê Thị Hương",
-        phone: "0369852147",
-        address: "321 Đường NOP, Phường QRS, Quận 2",
-        city: "TP. Hồ Chí Minh",
-        isDefault: true,
-      },
-      {
-        id: "5",
-        name: "Lê Thị Hương",
-        phone: "0369852147",
-        address: "654 Đường TUV, Phường WXY, Quận 9",
-        city: "TP. Hồ Chí Minh",
-        isDefault: false,
-      },
-      {
-        id: "6",
-        name: "Lê Thị Hương",
-        phone: "0369852147",
-        address: "987 Đường ZAB, Phường CDE, Quận Bình Thạnh",
-        city: "TP. Hồ Chí Minh",
-        isDefault: false,
-      },
-    ],
-    // User 4: Phạm Hoàng Nam
-    [
-      {
-        id: "7",
-        name: "Phạm Hoàng Nam",
-        phone: "0521478963",
-        address: "147 Đường FGH, Phường IJK, Quận 10",
-        city: "TP. Hồ Chí Minh",
-        isDefault: true,
-      },
-    ],
-  ];
+  const {
+    addresses,
+    loading,
+    error,
+    refreshAddresses,
+    createAddress,
+    setDefaultAddress,
+    updateAddress,
+    deleteAddress,
+  } = useAddresses();
 
-  // For demo, we'll use a simple counter to cycle through users
-  const [userIndex, setUserIndex] = useState(0);
-  const [addresses, setAddresses] = useState(mockAddressesData[0]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
-  // Simulate user change (in real app, this would come from context/state management)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setUserIndex((prev) => (prev + 1) % mockAddressesData.length);
-      setAddresses(
-        mockAddressesData[(userIndex + 1) % mockAddressesData.length]
-      );
-    }, 10000); // Change user every 10 seconds for demo
-    return () => clearInterval(interval);
-  }, [userIndex]);
+  const [formData, setFormData] = useState<CreateAddressRequest>({
+    name: "",
+    phone: "",
+    address: "",
+    city: "",
+    isDefault: false,
+    shopId: API_CONFIG.SHOP_ID,
+  });
 
-  const handleSetDefault = (addressId: string) => {
-    setAddresses((prev) =>
-      prev.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === addressId,
-      }))
-    );
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const handleSetDefault = async (addressId: string) => {
+    try {
+      await setDefaultAddress(addressId);
+    } catch (error) {
+      console.error("Failed to set default address:", error);
+    }
   };
 
-  const handleDeleteAddress = (addressId: string) => {
-    setAddresses((prev) => prev.filter((addr) => addr.id !== addressId));
+  const handleDeleteAddress = async (addressId: string) => {
+    try {
+      await deleteAddress(addressId);
+    } catch (error) {
+      console.error("Failed to delete address:", error);
+    }
   };
 
-  const handleEditAddress = (address: any) => {
-    // Mock edit address
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      errors.name = "Tên không được để trống";
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = "Số điện thoại không được để trống";
+    } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))) {
+      errors.phone = "Số điện thoại không hợp lệ";
+    }
+
+    if (!formData.address.trim()) {
+      errors.address = "Địa chỉ không được để trống";
+    }
+
+    if (!formData.city.trim()) {
+      errors.city = "Thành phố không được để trống";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      phone: "",
+      address: "",
+      city: "",
+      isDefault: false,
+      shopId: API_CONFIG.SHOP_ID,
+    });
+    setFormErrors({});
+  };
+
+  const handleInputChange = (
+    field: keyof CreateAddressRequest,
+    value: string | boolean
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleAddAddress = () => {
-    // Mock add new address
+    resetForm();
+    setShowAddModal(true);
+  };
+
+  const handleEditAddress = (address: Address) => {
+    setFormData({
+      name: address.name,
+      phone: address.phone,
+      address: address.address,
+      city: address.city,
+      isDefault: address.isDefault,
+      shopId: address.shopId,
+    });
+    setEditingAddress(address);
+    setShowEditModal(true);
+  };
+
+  const handleSubmitAdd = async () => {
+    if (!validateForm()) return;
+
+    try {
+      await createAddress(formData);
+      setShowAddModal(false);
+      resetForm();
+    } catch (error) {
+      console.error("Failed to create address:", error);
+    }
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!validateForm() || !editingAddress) return;
+
+    try {
+      await updateAddress(editingAddress.id, formData);
+      setShowEditModal(false);
+      setEditingAddress(null);
+      resetForm();
+    } catch (error) {
+      console.error("Failed to update address:", error);
+    }
+  };
+
+  const closeModals = () => {
+    setShowAddModal(false);
+    setShowEditModal(false);
+    setEditingAddress(null);
+    resetForm();
   };
 
   return (
@@ -130,7 +162,27 @@ function AddressPage() {
       />
 
       <Box className="p-4 space-y-4 mt-[100px]">
-        {addresses.length === 0 ? (
+        {loading && (
+          <Box className="flex justify-center py-8">
+            <Spinner />
+          </Box>
+        )}
+
+        {error && (
+          <Box className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <Text className="text-red-600 text-center">{error}</Text>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={refreshAddresses}
+              className="mt-2 w-full"
+            >
+              Thử lại
+            </Button>
+          </Box>
+        )}
+
+        {!loading && !error && addresses.length === 0 ? (
           <Box className="text-center py-20">
             <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <Text className="text-gray-500 text-lg mb-2">
@@ -147,7 +199,7 @@ function AddressPage() {
               Thêm địa chỉ
             </Button>
           </Box>
-        ) : (
+        ) : !loading && !error && addresses.length > 0 ? (
           <>
             {addresses.map((address) => (
               <Box
@@ -249,8 +301,186 @@ function AddressPage() {
               </div>
             </Button>
           </>
-        )}
+        ) : null}
       </Box>
+
+      {/* Add Address Modal */}
+      <Modal
+        visible={showAddModal}
+        onClose={closeModals}
+        title="Thêm địa chỉ mới"
+        actions={[
+          {
+            text: "Hủy",
+            onClick: closeModals,
+          },
+          {
+            text: "Thêm",
+            onClick: handleSubmitAdd,
+            disabled: loading,
+          },
+        ]}
+      >
+        <Box className="space-y-4">
+          <Box>
+            <Input
+              label="Tên người nhận *"
+              placeholder="Nhập tên người nhận"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+            />
+            {formErrors.name && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.name}
+              </Text>
+            )}
+          </Box>
+
+          <Box>
+            <Input
+              label="Số điện thoại *"
+              placeholder="Nhập số điện thoại"
+              value={formData.phone}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
+            />
+            {formErrors.phone && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.phone}
+              </Text>
+            )}
+          </Box>
+
+          <Box>
+            <Input
+              label="Địa chỉ *"
+              placeholder="Nhập địa chỉ chi tiết"
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+            />
+            {formErrors.address && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.address}
+              </Text>
+            )}
+          </Box>
+
+          <Box>
+            <Input
+              label="Thành phố *"
+              placeholder="Nhập thành phố"
+              value={formData.city}
+              onChange={(e) => handleInputChange("city", e.target.value)}
+            />
+            {formErrors.city && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.city}
+              </Text>
+            )}
+          </Box>
+
+          <Box className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="isDefault"
+              checked={formData.isDefault}
+              onChange={(e) => handleInputChange("isDefault", e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <label htmlFor="isDefault" className="text-sm text-gray-700">
+              Đặt làm địa chỉ mặc định
+            </label>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* Edit Address Modal */}
+      <Modal
+        visible={showEditModal}
+        onClose={closeModals}
+        title="Chỉnh sửa địa chỉ"
+        actions={[
+          {
+            text: "Hủy",
+            onClick: closeModals,
+          },
+          {
+            text: "Cập nhật",
+            onClick: handleSubmitEdit,
+            disabled: loading,
+          },
+        ]}
+      >
+        <Box className="space-y-4">
+          <Box>
+            <Input
+              label="Tên người nhận *"
+              placeholder="Nhập tên người nhận"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+            />
+            {formErrors.name && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.name}
+              </Text>
+            )}
+          </Box>
+
+          <Box>
+            <Input
+              label="Số điện thoại *"
+              placeholder="Nhập số điện thoại"
+              value={formData.phone}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
+            />
+            {formErrors.phone && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.phone}
+              </Text>
+            )}
+          </Box>
+
+          <Box>
+            <Input
+              label="Địa chỉ *"
+              placeholder="Nhập địa chỉ chi tiết"
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+            />
+            {formErrors.address && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.address}
+              </Text>
+            )}
+          </Box>
+
+          <Box>
+            <Input
+              label="Thành phố *"
+              placeholder="Nhập thành phố"
+              value={formData.city}
+              onChange={(e) => handleInputChange("city", e.target.value)}
+            />
+            {formErrors.city && (
+              <Text className="text-xs text-red-600 mt-1">
+                {formErrors.city}
+              </Text>
+            )}
+          </Box>
+
+          <Box className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="isDefaultEdit"
+              checked={formData.isDefault}
+              onChange={(e) => handleInputChange("isDefault", e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <label htmlFor="isDefaultEdit" className="text-sm text-gray-700">
+              Đặt làm địa chỉ mặc định
+            </label>
+          </Box>
+        </Box>
+      </Modal>
     </Page>
   );
 }

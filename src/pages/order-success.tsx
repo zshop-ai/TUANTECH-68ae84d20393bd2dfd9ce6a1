@@ -1,7 +1,6 @@
-import React from "react";
 import { Page, Box, Text, Button, Header } from "zmp-ui";
 import { useNavigate, useLocation } from "zmp-ui";
-import { CheckCircle, Home, Package, List } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 function OrderSuccessPage() {
   const navigate = useNavigate();
@@ -130,7 +129,6 @@ function OrderSuccessPage() {
               onClick={() => navigate("/orders")}
               className="border-gray-300 text-gray-900"
             >
-              <List className="mr-2" />
               Đơn hàng của tôi
             </Button>
             <Button
@@ -139,7 +137,6 @@ function OrderSuccessPage() {
               onClick={() => navigate("/")}
               className="bg-primary-600 hover:bg-primary-700"
             >
-              <Home className="mr-2" />
               Tiếp tục mua sắm
             </Button>
           </Box>
