@@ -1,5 +1,10 @@
 import { API_CONFIG } from "../config/api";
 import { apiGetPublic } from "../utils/api";
+import type {
+  PaginatedResponse,
+  ProductPaginationQuery
+} from "../types/pagination";
+import { buildProductPaginationQuery } from "../types/pagination";
 
 // Product types based on backend response
 export interface ProductVariant {
@@ -103,6 +108,18 @@ class ProductService {
     return url;
   }
 
+  async getAllProductsWithPagination(query?: ProductPaginationQuery): Promise<PaginatedResponse<Product>> {
+    const shopId = this.getShopId();
+    const url = this.buildUrl(API_CONFIG.ENDPOINTS.PRODUCTS, { shopId });
+
+    const queryParams = buildProductPaginationQuery(query || {});
+    const fullUrl = queryParams.toString()
+      ? `${url}?${queryParams.toString()}`
+      : url;
+
+    return apiGetPublic<PaginatedResponse<Product>>(fullUrl);
+  }
+
   async getAllProducts(query?: ProductQuery): Promise<Product[]> {
     const shopId = this.getShopId();
     const url = this.buildUrl(API_CONFIG.ENDPOINTS.PRODUCTS, { shopId });
@@ -117,8 +134,8 @@ class ProductService {
     }
 
     const fullUrl = queryParams.toString()
-      ? `${url}?${queryParams.toString()}`
-      : url;
+      ? `${url}/all?${queryParams.toString()}`
+      : `${url}/all`;
     return apiGetPublic<Product[]>(fullUrl);
   }
 

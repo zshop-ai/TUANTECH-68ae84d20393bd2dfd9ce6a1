@@ -11,7 +11,7 @@ export { default as ProductCard } from './components/ProductCard';
 export { default as BottomNavigation } from './components/BottomNavigation';
 export { default as CoreLayout } from './components/CoreLayout';
 export { default as TemplateSelector } from './components/TemplateSelector';
-export type { Product } from './components/ProductCard';
+export type { Product } from './types/product';
 
 // Hook exports
 export { useProducts } from './hooks/useProducts';

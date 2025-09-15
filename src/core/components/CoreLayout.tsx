@@ -4,7 +4,8 @@ import { useCoreTheme } from '../theme/context';
 import Header from './Header';
 import Banner from './Banner';
 import CategoryGrid from './CategoryGrid';
-import ProductCard, { Product } from './ProductCard';
+import ProductCard from './ProductCard';
+import type { Product } from '../types/product';
 import BottomNavigation from './BottomNavigation';
 
 interface CoreLayoutProps {

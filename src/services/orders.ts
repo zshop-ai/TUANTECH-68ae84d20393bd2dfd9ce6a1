@@ -1,5 +1,10 @@
 import { API_CONFIG } from "../config/api";
 import { apiGet } from "../utils/api";
+import type {
+  PaginatedResponse,
+  OrderPaginationQuery
+} from "../types/pagination";
+import { buildOrderPaginationQuery } from "../types/pagination";
 
 export interface OrderItemDto {
   productId: string;
@@ -32,9 +37,16 @@ export interface OrderDto {
 }
 
 export const ordersService = {
+  async getMyOrdersWithPagination(query?: OrderPaginationQuery) {
+    const base = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CUSTOMER_MY_ORDERS}`;
+    const params = buildOrderPaginationQuery(query || {});
+    const url = params.toString() ? `${base}?${params.toString()}` : base;
+    return apiGet<PaginatedResponse<OrderDto>>(url);
+  },
+
   async getMyOrders(status?: string) {
     const base = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CUSTOMER_MY_ORDERS}`;
-    const url = status ? `${base}?status=${encodeURIComponent(status)}` : base;
+    const url = status ? `${base}/all?status=${encodeURIComponent(status)}` : `${base}/all`;
     return apiGet<OrderDto[]>(url);
   },
 

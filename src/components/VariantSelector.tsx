@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Text, Button } from "zmp-ui";
-import { ProductVariant } from "../data/products";
+import { ProductVariant } from "../core/types/product";
 
 interface VariantSelectorProps {
   variants: ProductVariant[];
