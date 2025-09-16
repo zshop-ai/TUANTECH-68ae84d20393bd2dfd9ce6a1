@@ -37,4 +37,3 @@ Thumbs.db
 # Production build
 www/
 deploy.json
-session.json
