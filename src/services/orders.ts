@@ -19,6 +19,7 @@ export interface OrderItemDto {
 export interface OrderDto {
   id: string;
   shopId: string;
+  userId?: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -37,11 +38,54 @@ export interface OrderDto {
 }
 
 export const ordersService = {
-  async getMyOrdersWithPagination(query?: OrderPaginationQuery) {
-    const base = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CUSTOMER_MY_ORDERS}`;
-    const params = buildOrderPaginationQuery(query || {});
-    const url = params.toString() ? `${base}?${params.toString()}` : base;
-    return apiGet<PaginatedResponse<OrderDto>>(url);
+  async getMyOrdersWithPagination(query?: OrderPaginationQuery): Promise<PaginatedResponse<OrderDto>> {
+    try {
+      const base = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CUSTOMER_MY_ORDERS}`;
+      const params = buildOrderPaginationQuery(query || {});
+      const url = params.toString() ? `${base}?${params.toString()}` : base;
+
+      console.log('Fetching orders from:', url);
+
+      // Get all orders from backend (which returns OrderDto[])
+      const orders = await apiGet<OrderDto[]>(url);
+
+      console.log('Received orders:', orders);
+
+      // Apply client-side pagination since backend doesn't support it yet
+      const page = query?.page || 1;
+      const limit = query?.limit || 10;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+
+      // Filter by status if provided
+      let filteredOrders = orders;
+      if (query?.status) {
+        filteredOrders = orders.filter(order => order.status === query.status);
+      }
+
+      // Apply pagination
+      const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+      const total = filteredOrders.length;
+      const totalPages = Math.ceil(total / limit);
+
+      const result = {
+        data: paginatedOrders,
+        meta: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasPrevious: page > 1,
+          hasNext: page < totalPages,
+        },
+      };
+
+      console.log('Returning paginated result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in getMyOrdersWithPagination:', error);
+      throw error;
+    }
   },
 
   async getMyOrders(status?: string) {

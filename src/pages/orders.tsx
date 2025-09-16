@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { Page, Box, Text, Button, Header } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
-import { Package, Filter, Eye } from "lucide-react";
+import { Package, Filter, Eye, User } from "lucide-react";
 
 import BottomNavigation from "../core/components/BottomNavigation";
 import Pagination, { PaginationMeta } from "../components/Pagination";
 import { ordersService, OrderDto } from "../services/orders";
 import type { OrderPaginationQuery, PaginatedResponse } from "../types/pagination";
 import { DEFAULT_PAGINATION } from "../types/pagination";
+import { useAuth } from "../contexts/AuthContext";
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -44,6 +45,7 @@ const getStatusLabel = (status: string) => {
 
 function OrdersPage() {
   const navigate = useNavigate();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
 
   // Pagination state
   const [orders, setOrders] = useState<OrderDto[]>([]);
@@ -76,12 +78,17 @@ function OrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
+      console.log('Loading orders with query:', newQuery);
+
       const response: PaginatedResponse<OrderDto> = await ordersService.getMyOrdersWithPagination(newQuery);
+      console.log('Orders loaded successfully:', response);
+
       setOrders(response.data);
       setPaginationMeta(response.meta);
     } catch (e) {
-      setError("Không thể tải đơn hàng.");
+      console.error('Error loading orders:', e);
+      setError(`Không thể tải đơn hàng: ${e instanceof Error ? e.message : 'Unknown error'}`);
       setOrders([]);
       setPaginationMeta({
         page: 1,
@@ -98,13 +105,17 @@ function OrdersPage() {
 
   // Initial load
   useEffect(() => {
-    loadOrders(query);
-  }, [loadOrders]);
+    if (isLoggedIn) {
+      loadOrders(query);
+    }
+  }, [loadOrders, isLoggedIn]);
 
   // Reload orders when query changes
   useEffect(() => {
-    loadOrders(query);
-  }, [query, loadOrders]);
+    if (isLoggedIn) {
+      loadOrders(query);
+    }
+  }, [query, loadOrders, isLoggedIn]);
 
   // Handle pagination
   const handlePageChange = (page: number) => {
@@ -141,6 +152,44 @@ function OrdersPage() {
     { value: "delivered", label: "Đã giao hàng" },
     { value: "cancelled", label: "Đã hủy" },
   ];
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <Page className="bg-gray-50">
+        <Header title="Đơn hàng của tôi" className="bg-primary-600" showBackIcon />
+        <Box className="flex items-center justify-center h-64">
+          <Text>Đang tải...</Text>
+        </Box>
+      </Page>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isLoggedIn) {
+    return (
+      <Page className="bg-gray-50">
+        <Header title="Đơn hàng của tôi" className="bg-primary-600" showBackIcon />
+        <Box className="flex flex-col items-center justify-center h-64 p-6">
+          <User className="w-16 h-16 text-gray-300 mb-4" />
+          <Text className="text-lg font-semibold text-gray-700 mb-2">
+            Bạn chưa đăng nhập
+          </Text>
+          <Text className="text-gray-500 text-center mb-6">
+            Vui lòng đăng nhập để xem đơn hàng của bạn
+          </Text>
+          <Button
+            variant="primary"
+            onClick={() => navigate("/profile")}
+            className="bg-primary-600 hover:bg-primary-700"
+          >
+            Đăng nhập ngay
+          </Button>
+        </Box>
+        <BottomNavigation />
+      </Page>
+    );
+  }
 
   return (
     <Page className="bg-gray-50">

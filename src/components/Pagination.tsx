@@ -76,7 +76,7 @@ const Pagination: React.FC<PaginationProps> = ({
   }
 
   return (
-    <Box className={`bg-white p-4 ${className}`}>
+    <Box className={`bg-white border border-gray-200 rounded-lg shadow-sm p-4 mx-4 mb-4 ${className}`}>
       {/* Mobile-first design */}
       <Box className="flex flex-col space-y-4">
         {/* Page info */}
