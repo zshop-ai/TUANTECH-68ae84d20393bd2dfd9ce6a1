@@ -7,6 +7,7 @@ interface ProductMediaViewerProps {
   videoUrl?: string;
   selectedImage: number;
   onImageChange: (index: number) => void;
+  onImageClick?: () => void;
 }
 
 const ProductMediaViewer: React.FC<ProductMediaViewerProps> = ({
@@ -14,6 +15,7 @@ const ProductMediaViewer: React.FC<ProductMediaViewerProps> = ({
   videoUrl,
   selectedImage,
   onImageChange,
+  onImageClick,
 }) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -91,7 +93,8 @@ const ProductMediaViewer: React.FC<ProductMediaViewerProps> = ({
           <img
             src={allMedia[currentMediaIndex]}
             alt={`Product image ${currentMediaIndex + 1}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover cursor-pointer"
+            onClick={onImageClick}
           />
         )}
 

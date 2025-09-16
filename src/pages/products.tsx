@@ -9,7 +9,7 @@ import {
   Input
 } from 'zmp-ui';
 import { useNavigate } from 'zmp-ui';
-import { Search, Star, Filter, Grid, List } from 'lucide-react';
+import { Search, Star, Filter } from 'lucide-react';
 
 import ProductCard from '../core/components/ProductCard';
 import BottomNavigation from '../core/components/BottomNavigation';
@@ -47,7 +47,6 @@ const ProductsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Categories for filtering
   const [categories] = useState([
@@ -179,88 +178,98 @@ const ProductsPage: React.FC = () => {
       <Header title="Sản phẩm" className="bg-primary-600" showBackIcon />
 
       {/* Search and Filters */}
-      <Box className="bg-white p-4 shadow-sm">
+      <Box className="bg-white p-4 shadow-sm mt-[100px]">
         {/* Search bar */}
-        <Box className="relative mb-4">
-          <Input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-          />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <Button
-            onClick={handleSearch}
-            size="small"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2"
-          >
-            Tìm
-          </Button>
-        </Box>
+      <Box className="relative mb-4">
+        <Input
+          placeholder="Tìm kiếm sản phẩm..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
+          className="w-full pr-10" // chừa khoảng trống bên phải cho icon
+          clearable
+        />
+        <button
+          onClick={handleSearch}
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary-600 text-white rounded-md px-3 py-1 flex items-center space-x-1 hover:bg-primary-700 transition"
+        >
+          <Search className="w-4 h-4" />
+          <span className="text-sm">Tìm</span>
+        </button>
+      </Box>
+
 
         {/* Filter buttons */}
-        <Box className="flex items-center justify-between">
-          <Box className="flex items-center space-x-2">
-            <Button
-              onClick={() => setShowFilters(!showFilters)}
-              variant="secondary"
-              size="small"
-              className="flex items-center space-x-1"
-            >
-              <Filter className="w-4 h-4" />
-              <span>Bộ lọc</span>
-            </Button>
-            
-            {/* Sort buttons */}
-            <Button
-              onClick={() => handleSort('price', query.sortOrder === 'asc' ? 'desc' : 'asc')}
-              variant="secondary"
-              size="small"
-            >
-              Giá {query.sortBy === 'price' && (query.sortOrder === 'asc' ? '↑' : '↓')}
-            </Button>
-            
-            <Button
-              onClick={() => handleSort('createdAt', query.sortOrder === 'asc' ? 'desc' : 'asc')}
-              variant="secondary"
-              size="small"
-            >
-              Mới nhất {query.sortBy === 'createdAt' && (query.sortOrder === 'asc' ? '↑' : '↓')}
-            </Button>
-          </Box>
+        <Box className="space-y-4">
+          {/* Main filter row */}
+          <Box className="flex items-center justify-between">
+            <Box className="flex items-center space-x-3">
+              <Button
+                onClick={() => setShowFilters(!showFilters)}
+                variant="secondary"
+                size="small"
+                className={`!flex !items-center !space-x-3 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  showFilters 
+                    ? 'bg-primary-600 text-white border-primary-600' 
+                    : 'border-2 border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300'
+                }`}
+              >
+                <Filter className="w-4 h-4 !inline-block !mr-2" />
+                <span className="!inline-block">Bộ lọc</span>
+              </Button>
+              
+              {/* Sort buttons */}
+              <Button
+                onClick={() => handleSort('price', query.sortOrder === 'asc' ? 'desc' : 'asc')}
+                variant="secondary"
+                size="small"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  query.sortBy === 'price'
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'border-2 border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300'
+                }`}
+              >
+                Giá {query.sortBy === 'price' && (query.sortOrder === 'asc' ? '↑' : '↓')}
+              </Button>
+              
+              <Button
+                onClick={() => handleSort('createdAt', query.sortOrder === 'asc' ? 'desc' : 'asc')}
+                variant="secondary"
+                size="small"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  query.sortBy === 'createdAt'
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'border-2 border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300'
+                }`}
+              >
+                Mới nhất {query.sortBy === 'createdAt' && (query.sortOrder === 'asc' ? '↑' : '↓')}
+              </Button>
+            </Box>
 
-          {/* View mode toggle */}
-          <Box className="flex border border-gray-300 rounded">
-            <Button
-              onClick={() => setViewMode("grid")}
-              variant={viewMode === "grid" ? "primary" : "secondary"}
-              size="small"
-              className="rounded-r-none"
-            >
-              <Grid className="w-4 h-4" />
-            </Button>
-            <Button
-              onClick={() => setViewMode("list")}
-              variant={viewMode === "list" ? "primary" : "secondary"}
-              size="small"
-              className="rounded-l-none"
-            >
-              <List className="w-4 h-4" />
-            </Button>
           </Box>
         </Box>
 
         {/* Category filters (when expanded) */}
         {showFilters && (
-          <Box className="mt-4 pt-4 border-t border-gray-200">
-            <Text className="text-sm font-medium text-gray-700 mb-2">Danh mục:</Text>
-            <Box className="flex flex-wrap gap-2">
+          <Box className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <Text className="text-sm font-semibold text-gray-800 mb-4 flex items-center">
+              <Filter className="w-4 h-4 mr-2 text-primary-600" />
+              Bộ lọc danh mục
+            </Text>
+            <Box className="flex flex-wrap gap-3">
               <Button
                 onClick={() => handleCategoryFilter("")}
                 variant={!query.categoryId ? "primary" : "secondary"}
                 size="small"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  !query.categoryId 
+                    ? 'bg-primary-600 text-white' 
+                    : 'border-2 border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300'
+                }`}
               >
                 Tất cả
               </Button>
@@ -270,6 +279,11 @@ const ProductsPage: React.FC = () => {
                   onClick={() => handleCategoryFilter(category.id)}
                   variant={query.categoryId === category.id ? "primary" : "secondary"}
                   size="small"
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    query.categoryId === category.id 
+                      ? 'bg-primary-600 text-white' 
+                      : 'border-2 border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300'
+                  }`}
                 >
                   {category.name}
                 </Button>
@@ -280,14 +294,14 @@ const ProductsPage: React.FC = () => {
       </Box>
 
       {/* Results info */}
-      <Box className="bg-white px-4 py-2 border-b border-gray-200">
-        <Text className="text-sm text-gray-600">
+      <Box className="bg-white px-4 py-3 border-b border-gray-200">
+        <Text className="text-sm text-gray-600 font-medium">
           {loading ? "Đang tải..." : `Hiển thị ${products.length} trong tổng số ${paginationMeta.total} sản phẩm`}
         </Text>
       </Box>
 
       {/* Products Display */}
-      <Box className="p-4 space-y-4 mt-[100px]">
+      <Box className="p-4 space-y-4">
         {loading ? (
           <Box className="text-center py-20">
             <Text className="text-gray-500">Đang tải sản phẩm...</Text>
@@ -297,7 +311,7 @@ const ProductsPage: React.FC = () => {
             <Text className="text-red-600">{error}</Text>
             <Button
               onClick={() => loadProducts(query)}
-              className="mt-4"
+              className="mt-4 bg-primary-600 hover:bg-primary-700"
               variant="primary"
             >
               Thử lại
@@ -313,73 +327,25 @@ const ProductsPage: React.FC = () => {
             </Text>
           </Box>
         ) : (
-          <>
-            {viewMode === "grid" ? (
-              <Box className="grid grid-cols-2 gap-4">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={convertToUIProduct(product)}
-                    onAddToCart={handleAddToCart}
-                    onViewDetail={handleViewDetail}
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Box className="space-y-4">
-                {products.map((product) => (
-                  <Box
-                    key={product.id}
-                    className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
-                  >
-                    <Box className="flex space-x-4">
-                      {/* Product image */}
-                      <Box className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0">
-                        {product.variants?.[0]?.images?.[0] && (
-                          <img
-                            src={product.variants[0].images[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        )}
-                      </Box>
-                      
-                      {/* Product info */}
-                      <Box className="flex-1 min-w-0">
-                        <Text className="font-medium text-gray-900 truncate">
-                          {product.name}
-                        </Text>
-                        <Text className="text-sm text-gray-500 mt-1 line-clamp-2">
-                          {product.description_short || product.description}
-                        </Text>
-                        <Box className="flex items-center justify-between mt-2">
-                          <Text className="text-lg font-bold text-primary-600">
-                            ₫{product.minPrice?.toLocaleString('vi-VN')}
-                          </Text>
-                          <Button
-                            onClick={() => handleAddToCart(convertToUIProduct(product))}
-                            size="small"
-                            variant="primary"
-                          >
-                            Thêm
-                          </Button>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            )}
-
-            {/* Pagination */}
-            <Pagination
-              meta={paginationMeta}
-              onPageChange={handlePageChange}
-              onLimitChange={handleLimitChange}
-              showLimitSelector={true}
-            />
-          </>
+          <Box className="grid grid-cols-2 gap-4">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={convertToUIProduct(product)}
+                onAddToCart={handleAddToCart}
+                onViewDetail={handleViewDetail}
+              />
+            ))}
+          </Box>
         )}
+
+        {/* Pagination */}
+        <Pagination
+          meta={paginationMeta}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+          showLimitSelector={true}
+        />
       </Box>
 
       {/* Bottom Spacing */}

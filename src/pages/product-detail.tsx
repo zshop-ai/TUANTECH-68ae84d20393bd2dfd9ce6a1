@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Page, Box, Text, Button, Header, useSnackbar, Spinner } from "zmp-ui";
 import { useNavigate, useLocation } from "zmp-ui";
-import { Star, ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, ShoppingCart, X } from "lucide-react";
 import { Product } from "../core/types/product";
 import { useProductDetail } from "../hooks/useProducts";
 import VariantSelector from "../components/VariantSelector";
@@ -20,6 +20,7 @@ function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     null
   );
+  const [showImageModal, setShowImageModal] = useState(false);
 
   // Try to get product ID from state or URL params
   const productId = productFromState?.id || location.pathname.split("/").pop();
@@ -159,12 +160,13 @@ function ProductDetailPage() {
       />
 
       {/* Product Media Viewer */}
-      <Box className="p-4">
+      <Box className="p-4 pt-[100px]">
         <ProductMediaViewer
           images={product.images}
           videoUrl={product.video_url}
           selectedImage={selectedImage}
           onImageChange={setSelectedImage}
+          onImageClick={() => setShowImageModal(true)}
         />
 
         {/* Discount Badge */}
@@ -331,6 +333,107 @@ function ProductDetailPage() {
             >
               Mua ngay
             </Button>
+          </Box>
+        </Box>
+      )}
+
+      {/* Image Modal */}
+      {showImageModal && (
+        <Box 
+          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          onTouchStart={(e) => {
+            const startX = e.touches[0].clientX;
+            const startY = e.touches[0].clientY;
+            
+            const handleTouchMove = (moveEvent: TouchEvent) => {
+              const currentX = moveEvent.touches[0].clientX;
+              const currentY = moveEvent.touches[0].clientY;
+              const diffX = startX - currentX;
+              const diffY = startY - currentY;
+              
+              // Swipe left (next image)
+              if (Math.abs(diffX) > Math.abs(diffY) && diffX > 50) {
+                setSelectedImage(selectedImage === product.images.length - 1 ? 0 : selectedImage + 1);
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+              }
+              // Swipe right (previous image)
+              else if (Math.abs(diffX) > Math.abs(diffY) && diffX < -50) {
+                setSelectedImage(selectedImage === 0 ? product.images.length - 1 : selectedImage - 1);
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+              }
+            };
+            
+            const handleTouchEnd = () => {
+              document.removeEventListener('touchmove', handleTouchMove);
+              document.removeEventListener('touchend', handleTouchEnd);
+            };
+            
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleTouchEnd);
+          }}
+        >
+          <Box className="relative max-w-4xl max-h-full w-full h-full flex flex-col">
+            {/* Top Bar with Close Button and Counter */}
+            <Box className="flex items-center justify-between p-4 pt-[36px]">
+              {/* Close Button */}
+              <Button
+                variant="secondary"
+                size="small"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
+                onClick={() => setShowImageModal(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+
+              {/* Image Counter - Centered */}
+              <Box className="bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
+                {selectedImage + 1} / {product.images.length}
+              </Box>
+
+              {/* Empty space for balance */}
+              <Box className="w-8" />
+            </Box>
+
+            {/* Main Image Container */}
+            <Box className="flex-1 flex items-center justify-center p-4">
+              <img
+                src={product.images[selectedImage]}
+                alt={`Product image ${selectedImage + 1}`}
+                className="max-w-full max-h-full object-contain"
+              />
+            </Box>
+
+            {/* Thumbnail Navigation */}
+            {product.images.length > 1 && (
+              <Box className="p-4">
+                <Box className="flex space-x-2 overflow-x-auto scrollbar-hide justify-center">
+                  {product.images.map((image, index) => (
+                    <Box
+                      key={index}
+                      className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-200 ${
+                        selectedImage === index
+                          ? "border-white scale-110 shadow-lg"
+                          : "border-gray-500 opacity-50 hover:opacity-75"
+                      }`}
+                      onClick={() => setSelectedImage(index)}
+                    >
+                      <img
+                        src={image}
+                        alt={`Thumbnail ${index + 1}`}
+                        className={`w-full h-full object-cover transition-all duration-200 ${
+                          selectedImage === index
+                            ? "brightness-100"
+                            : "brightness-75"
+                        }`}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
       )}
