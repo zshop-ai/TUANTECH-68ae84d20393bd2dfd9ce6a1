@@ -26,6 +26,7 @@ import { cartService } from "../services/cart";
 import { authService } from "../services/auth";
 import { useAddresses } from "../hooks/useAddresses";
 import { Address } from "../services/address";
+import { paymentService } from "../services/payment";
 
 function CheckoutPage() {
   const navigate = useNavigate();
@@ -41,6 +42,9 @@ function CheckoutPage() {
     error: addressesError,
     refreshAddresses,
   } = useAddresses();
+
+  // Payment processing state
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
 
   // Redirect if no products
   if (products.length === 0) {
@@ -207,7 +211,43 @@ function CheckoutPage() {
         notes: formData.note,
       };
 
-      let checkoutPayload;
+      // If COD is selected, use the new checkoutZaloCOD function
+      if (customerInfo.paymentMethod === "cod") {
+        setIsPaymentProcessing(true);
+        try {
+          const totalAmount = calculateTotal();
+          const user = authService.getCurrentUser?.();
+
+          console.log("🛒 Processing COD payment for amount:", totalAmount);
+
+          const zaloCODResult = await paymentService.checkoutZaloCOD({
+            amount: totalAmount,
+            description: "Thanh toán khi nhận hàng",
+            userId: user?.id,
+          });
+
+          if (!zaloCODResult.success) {
+            console.error("❌ Zalo COD checkout failed:", zaloCODResult.error);
+            openSnackbar({
+              type: "error",
+              text: zaloCODResult.error || "Tạo đơn hàng COD thất bại",
+              duration: 3000,
+            });
+            throw new Error(zaloCODResult.error || "Zalo COD checkout failed");
+          }
+
+          console.log("✅ Zalo COD checkout successful:", zaloCODResult);
+          openSnackbar({
+            type: "success",
+            text: "Đơn hàng COD đã được tạo thành công",
+            duration: 3000,
+          });
+        } finally {
+          setIsPaymentProcessing(false);
+        }
+      }
+
+      let checkoutPayload: any;
 
       if (mode === "buy_now") {
         // For buy now, we expect a single product with variant info
@@ -547,9 +587,9 @@ function CheckoutPage() {
           fullWidth
           onClick={handleSubmit}
           className="bg-primary-600 hover:bg-primary-700"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isPaymentProcessing}
         >
-          {isSubmitting
+          {isSubmitting || isPaymentProcessing
             ? "Đang xử lý..."
             : `Đặt hàng - ${formatPrice(calculateTotal())}`}
         </Button>
