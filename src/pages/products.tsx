@@ -8,7 +8,7 @@ import {
   useSnackbar,
   Input
 } from 'zmp-ui';
-import { useNavigate } from 'zmp-ui';
+import { useNavigate, useLocation } from 'zmp-ui';
 import { Search, Star, Filter } from 'lucide-react';
 
 import ProductCard from '../core/components/ProductCard';
@@ -22,7 +22,11 @@ import { DEFAULT_PAGINATION } from '../types/pagination';
 
 const ProductsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openSnackbar } = useSnackbar();
+
+  // Get category from navigation state
+  const categoryFromState = location.state?.category;
 
   // Pagination state
   const [products, setProducts] = useState<ServiceProduct[]>([]);
@@ -40,6 +44,7 @@ const ProductsPage: React.FC = () => {
     page: DEFAULT_PAGINATION.page,
     limit: DEFAULT_PAGINATION.limit,
     sortOrder: DEFAULT_PAGINATION.sortOrder,
+    categoryId: categoryFromState || undefined,
   });
 
   // UI state

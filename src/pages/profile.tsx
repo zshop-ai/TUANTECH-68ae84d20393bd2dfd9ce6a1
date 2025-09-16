@@ -3,7 +3,6 @@ import { Page, Box, Text, Button, List, Header } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
 import {
   MapPin,
-  Settings,
   Headphones,
   Info,
   ChevronRight,
@@ -124,23 +123,17 @@ function ProfilePage() {
       action: () => navigate("/address"),
     },
     {
-      id: "settings",
-      title: "Cài đặt",
-      icon: Settings,
-      action: () => navigate("/settings"),
-    },
-    {
       id: "support",
       title: "Hỗ trợ khách hàng",
       icon: Headphones,
       action: () => navigate("/support"),
     },
-    {
-      id: "about",
-      title: "Về chúng tôi",
-      icon: Info,
-      action: () => navigate("/about"),
-    },
+    // {
+    //   id: "about",
+    //   title: "Về chúng tôi",
+    //   icon: Info,
+    //   action: () => navigate("/about"),
+    // },
   ];
 
   const actionButtons = [

@@ -28,14 +28,14 @@ export const API_CONFIG = {
     ZALO_COD_ORDER: "/payment/zalo-cod-order",
   },
   // CẬP NHẬT VỚI THÔNG TIN THỰC TẾ CỦA BẠN
-  APP_ID: import.meta.env.NEXT_PUBLIC_ZALO_APP_ID || import.meta.env.VITE_ZALO_APP_ID || import.meta.env.VITE_APP_ID || "4447770839699639655",
+  APP_ID: import.meta.env.NEXT_PUBLIC_ZALO_APP_ID || import.meta.env.VITE_ZALO_APP_ID || import.meta.env.APP_ID || "4447770839699639655",
   SHOP_ID: import.meta.env.VITE_SHOP_ID || "68ad2eaae02ddc5108d2fd1a",
 };
 
 export const ZALO_CONFIG = {
   GRAPH_API_URL: "https://graph.zalo.me/v2.0/me",
   FIELDS: "id,name,picture,is_follower,is_sensitive,user_id_by_oa,oa_id",
-  APP_ID: import.meta.env.NEXT_PUBLIC_ZALO_APP_ID || import.meta.env.VITE_ZALO_APP_ID || "4447770839699639655",
+  APP_ID: import.meta.env.NEXT_PUBLIC_ZALO_APP_ID || import.meta.env.APP_ID || "4447770839699639655",
   CHANNEL: import.meta.env.VITE_ZALO_CHANNEL || "sandbox",
   ENV_MODE: import.meta.env.VITE_ZALO_ENV_MODE || "development",
 };

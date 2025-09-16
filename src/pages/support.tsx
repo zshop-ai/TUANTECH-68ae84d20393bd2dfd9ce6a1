@@ -17,7 +17,7 @@ function SupportPage() {
   const supportMethods = [
     {
       id: "chat",
-      title: "Chat trực tuyến",
+      title: "Chat trực tuyến với OA",
       subtitle: "Trò chuyện với nhân viên hỗ trợ",
       icon: MessageCircle,
       action: () => console.log("Open chat"),
@@ -35,29 +35,6 @@ function SupportPage() {
       subtitle: "support@veridianbloom.com",
       icon: Mail,
       action: () => console.log("Send email"),
-    },
-  ];
-
-  const faqItems = [
-    {
-      question: "Làm thế nào để đặt hàng?",
-      answer:
-        "Bạn có thể đặt hàng bằng cách chọn sản phẩm, thêm vào giỏ hàng và tiến hành thanh toán.",
-    },
-    {
-      question: "Thời gian giao hàng là bao lâu?",
-      answer:
-        "Thời gian giao hàng từ 2-5 ngày làm việc tùy thuộc vào địa chỉ giao hàng.",
-    },
-    {
-      question: "Có thể đổi trả sản phẩm không?",
-      answer:
-        "Có, bạn có thể đổi trả sản phẩm trong vòng 30 ngày kể từ ngày nhận hàng.",
-    },
-    {
-      question: "Các phương thức thanh toán nào được chấp nhận?",
-      answer:
-        "Chúng tôi chấp nhận thanh toán bằng tiền mặt, chuyển khoản ngân hàng và ví MoMo.",
     },
   ];
 
@@ -103,21 +80,6 @@ function SupportPage() {
           </Box>
         </Box>
 
-        {/* Business Hours */}
-        <Box className="bg-white rounded-lg p-4 shadow-sm">
-          <Box className="flex items-center space-x-3 mb-3">
-            <Clock className="w-5 h-5 text-primary-600" />
-            <Text className="font-medium text-gray-900">Giờ làm việc</Text>
-          </Box>
-          <Box className="space-y-1">
-            <Text className="text-sm text-gray-600">
-              Thứ 2 - Thứ 6: 8:00 - 18:00
-            </Text>
-            <Text className="text-sm text-gray-600">Thứ 7: 8:00 - 12:00</Text>
-            <Text className="text-sm text-gray-600">Chủ nhật: Nghỉ</Text>
-          </Box>
-        </Box>
-
         {/* Office Address */}
         <Box className="bg-white rounded-lg p-4 shadow-sm">
           <Box className="flex items-center space-x-3 mb-3">
@@ -128,43 +90,6 @@ function SupportPage() {
             123 Đường ABC, Phường XYZ, Quận 1, TP. Hồ Chí Minh
           </Text>
         </Box>
-
-        {/* FAQ */}
-        <Box>
-          <Text.Title size="large" className="mb-3 text-gray-900">
-            Câu hỏi thường gặp
-          </Text.Title>
-          <Box className="bg-white rounded-lg shadow-sm">
-            {faqItems.map((faq, index) => (
-              <Box
-                key={index}
-                className={`p-4 ${
-                  index === faqItems.length - 1
-                    ? ""
-                    : "border-b border-gray-100"
-                }`}
-              >
-                <Text className="font-medium text-gray-900 mb-2">
-                  {faq.question}
-                </Text>
-                <Text className="text-sm text-gray-600">{faq.answer}</Text>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Contact Button */}
-        <Button
-          variant="primary"
-          fullWidth
-          onClick={() => console.log("Contact support")}
-          className="bg-primary-600 hover:bg-primary-700"
-        >
-          <div className="flex items-center justify-center">
-            <Headphones className="w-5 h-5 mr-2" />
-            Liên hệ ngay
-          </div>
-        </Button>
       </Box>
     </Page>
   );

@@ -22,7 +22,6 @@ import ProfilePage from '../../pages/profile';
 import OrdersPage from '../../pages/orders';
 import FavoritesPage from '../../pages/favorites';
 import AddressPage from '../../pages/address';
-import SettingsPage from '../../pages/settings';
 import SupportPage from '../../pages/support';
 import AboutPage from '../../pages/about';
 import TestPage from '../../pages/test';
@@ -52,7 +51,6 @@ const CoreApp: React.FC<CoreAppProps> = ({ defaultTemplateId = 'cosmetic' }) => 
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/address" element={<AddressPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/about" element={<AboutPage />} />
           </AnimationRoutes>
