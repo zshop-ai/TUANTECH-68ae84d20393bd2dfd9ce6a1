@@ -20,6 +20,8 @@ export type CartItemAttributes = Record<string, any>;
 export interface AddToCartPayload {
   productId: string;
   quantity: number;
+  discount?: number;
+  discountedPrice?: number;
   attributes?: CartItemAttributes;
 }
 

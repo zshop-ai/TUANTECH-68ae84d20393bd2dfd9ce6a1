@@ -213,7 +213,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
               SKU: {selectedVariant.sku}
             </Text>
             <Text className="text-lg font-bold text-primary-600">
-              {formatPrice(selectedVariant.price)}
+              {formatPrice(selectedVariant.discountedPrice)}
             </Text>
           </Box>
           <Text className="text-sm text-gray-600">

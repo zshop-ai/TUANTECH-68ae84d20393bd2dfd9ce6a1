@@ -82,42 +82,50 @@ function ProductDetailPage() {
       )
     : 0;
 
-  const handleAddToCart = async (variant: ProductVariant, quantity: number) => {
-    try {
-      // Require variant selection when product has variants
-      if (product.variants && product.variants.length > 0 && !variant) {
-        Toast.error(
-          "Vui lòng chọn đầy đủ biến thể trước khi thêm vào giỏ",
-          3000
-        );
-        return;
-      }
-
-      const attributesMap = variant?.attributes?.length
-        ? variant.attributes.reduce((acc: Record<string, string>, attr) => {
-            acc[attr.name] = attr.value;
-            return acc;
-          }, {})
-        : undefined;
-
-      await cartService.addItem({
-        productId: product.id,
-        quantity,
-        attributes: {
-          ...(attributesMap || {}),
-          ...(variant?.sku ? { sku: variant.sku } : {}),
-        },
-      });
-      Toast.success(
-        `Đã thêm ${quantity} ${product.name}${
-          variant?.sku ? ` (${variant.sku})` : ""
-        } vào giỏ hàng`,
-        2000
+ const handleAddToCart = async (variant: ProductVariant, quantity: number) => {
+  try {
+    if (product.variants && product.variants.length > 0 && !variant) {
+      Toast.error(
+        "Vui lòng chọn đầy đủ biến thể trước khi thêm vào giỏ",
+        3000
       );
-    } catch (e: any) {
-      Toast.error(e?.message || "Không thể thêm vào giỏ hàng", 3000);
+      return;
     }
-  };
+
+    const attributesMap = variant?.attributes?.length
+      ? variant.attributes.reduce((acc: Record<string, string>, attr) => {
+          acc[attr.name] = attr.value;
+          return acc;
+        }, {})
+      : undefined;
+
+    // ✅ Lấy trực tiếp từ variant nếu có, nếu không fallback sang product
+    const price = variant?.price ?? product.price;
+    const discount = variant?.discount ?? 0;
+    const discountedPrice = variant?.discountedPrice ?? price;
+
+    await cartService.addItem({
+      productId: product.id,
+      quantity,
+      discount,
+      discountedPrice,
+      attributes: {
+        ...(attributesMap || {}),
+        ...(variant?.sku ? { sku: variant.sku } : {}),
+      },
+    });
+
+    Toast.success(
+      `Đã thêm ${quantity} ${product.name}${
+        variant?.sku ? ` (${variant.sku})` : ""
+      } vào giỏ hàng`,
+      2000
+    );
+  } catch (e: any) {
+    Toast.error(e?.message || "Không thể thêm vào giỏ hàng", 3000);
+  }
+};
+
 
   const handleBuyNow = (variant: ProductVariant, quantity: number) => {
     navigate("/checkout", {
@@ -234,38 +242,7 @@ function ProductDetailPage() {
             {product.description}
           </Text>
         </Box>
-
-        {/* Features */}
-        <Box>
-          <Text.Title size="large" className="mb-2">
-            Đặc điểm nổi bật
-          </Text.Title>
-          <Box className="space-y-2">
-            {product.features.map((feature, index) => (
-              <Box key={index} className="flex items-center space-x-2">
-                <Star className="w-4 h-4 text-primary-600 fill-current" />
-                <Text>{feature}</Text>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Tags */}
-        <Box>
-          <Text.Title size="large" className="mb-2">
-            Tags
-          </Text.Title>
-          <Box className="flex flex-wrap gap-2">
-            {product.tags.map((tag, index) => (
-              <Box
-                key={index}
-                className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm"
-              >
-                {tag}
-              </Box>
-            ))}
-          </Box>
-        </Box>
+      
 
         {/* Divider */}
         <Box className="border-t border-gray-200 my-4" />

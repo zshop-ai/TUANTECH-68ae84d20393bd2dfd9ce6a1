@@ -2,11 +2,12 @@ export interface ProductVariant {
   sku: string;
   price: number;
   stock: number;
+  discount: number;
+  discountedPrice: number;
   attributes: Array<{
     name: string;
     value: string;
     displayName: string;
-    price: number;
   }>;
   images: string[];
   isActive: boolean;

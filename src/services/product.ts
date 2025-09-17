@@ -210,9 +210,6 @@ class ProductService {
         product.isAvailable &&
         (product.totalStock > 0 ||
           (product.variants && product.variants.some((v) => v.stock > 0))),
-      tags: product.attributes?.map((attr) => attr.name) || [],
-      features:
-        product.attributes?.map((attr) => `${attr.name}: ${attr.value}`) || [],
       // Additional backend fields
       variants: product.variants,
       totalStock: product.totalStock,
